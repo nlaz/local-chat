@@ -1,28 +1,21 @@
 // renderer.js — canvas sprite drawing
-// Draws the room background, player sprites, and name labels each rAF frame.
+// Draws the room background, furniture props, player sprites, and name labels each rAF frame.
 
 const Renderer = (function () {
-  const FLOOR_LIGHT  = '#3a5c2a';   // lighter grass tile
-  const FLOOR_DARK   = '#2d4a22';   // darker grass tile
-  const TILE_SIZE    = 32;
-  const WALL_COLOR   = '#5c3310';   // dark brown stone
-  const WALL_WIDTH   = 16;
-  const LABEL_FONT   = '11px "Courier New", monospace';
-  const LABEL_COLOR  = '#ffd700';   // gold name labels (R11)
-  const LABEL_SHADOW = 'rgba(0,0,0,0.8)';
-  const NAME_OFFSET  = 8;   // px above sprite top
-
-  let _sheet = null;
-
-  function loadSheet(onLoad) {
-    _sheet = new Image();
-    _sheet.onload = onLoad;
-    _sheet.src = '/assets/characters.png';
-  }
+  const FLOOR_LIGHT       = '#d4d4ce';   // lighter grey carpet tile
+  const FLOOR_DARK        = '#c8c8c2';   // darker grey carpet tile
+  const TILE_SIZE         = 32;
+  const WALL_COLOR        = '#f8f8f8';   // near-white wall
+  const WALL_WIDTH        = 16;
+  const BASEBOARD_COLOR   = '#dcdcd6';   // thin accent line inside walls
+  const CEILING_PANEL     = '#eaeae6';   // pale overhead fluorescent panel
+  const LABEL_FONT        = '11px "Courier New", monospace';
+  const LABEL_COLOR       = '#3a6a78';   // corporate teal name labels
+  const LABEL_SHADOW      = 'rgba(0,0,0,0.25)';
+  const NAME_OFFSET       = 8;   // px above sprite top
 
   // ── Background ────────────────────────────────────────────
   function drawBackground(ctx, cw, ch) {
-    // Grass checkerboard floor — clip to interior (inside walls) ──
     const ix = WALL_WIDTH;
     const iy = WALL_WIDTH;
     const iw = cw - WALL_WIDTH * 2;
@@ -30,6 +23,7 @@ const Renderer = (function () {
     const cols = Math.ceil(iw / TILE_SIZE) + 1;
     const rows = Math.ceil(ih / TILE_SIZE) + 1;
 
+    // Carpet checkerboard — clipped to interior
     ctx.save();
     ctx.beginPath();
     ctx.rect(ix, iy, iw, ih);
@@ -42,34 +36,105 @@ const Renderer = (function () {
       }
     }
 
+    drawCeilingPanels(ctx);
+    drawFurniture(ctx);
+
     ctx.restore();
 
-    // Wall border (dark brown stone — R12) ──────────────────
+    // Wall border (near-white) ──────────────────
     ctx.fillStyle = WALL_COLOR;
-    ctx.fillRect(0, 0, cw, WALL_WIDTH);                      // top
-    ctx.fillRect(0, ch - WALL_WIDTH, cw, WALL_WIDTH);        // bottom
-    ctx.fillRect(0, 0, WALL_WIDTH, ch);                      // left
-    ctx.fillRect(cw - WALL_WIDTH, 0, WALL_WIDTH, ch);        // right
+    ctx.fillRect(0, 0, cw, WALL_WIDTH);
+    ctx.fillRect(0, ch - WALL_WIDTH, cw, WALL_WIDTH);
+    ctx.fillRect(0, 0, WALL_WIDTH, ch);
+    ctx.fillRect(cw - WALL_WIDTH, 0, WALL_WIDTH, ch);
+
+    // Baseboard — 2px accent inside the wall border
+    ctx.fillStyle = BASEBOARD_COLOR;
+    ctx.fillRect(WALL_WIDTH, WALL_WIDTH, cw - WALL_WIDTH * 2, 2);                              // top
+    ctx.fillRect(WALL_WIDTH, ch - WALL_WIDTH - 2, cw - WALL_WIDTH * 2, 2);                     // bottom
+    ctx.fillRect(WALL_WIDTH, WALL_WIDTH, 2, ch - WALL_WIDTH * 2);                              // left
+    ctx.fillRect(cw - WALL_WIDTH - 2, WALL_WIDTH, 2, ch - WALL_WIDTH * 2);                     // right
   }
 
-  // ── Single sprite ─────────────────────────────────────────
-  function drawSprite(ctx, char, x, y, frameY, facingLeft) {
-    const { sheetX, frameW, frameH } = char;
-    const dw = frameW * SCALE;
-    const dh = frameH * SCALE;
-    const rx = Math.round(x);
-    const ry = Math.round(y);
+  // ── Ceiling fluorescent panels (overhead lighting hint) ───
+  function drawCeilingPanels(ctx) {
+    ctx.fillStyle = CEILING_PANEL;
+    ctx.fillRect(80,  26, 160, 10);
+    ctx.fillRect(300, 26, 160, 10);
+    ctx.fillRect(520, 26, 160, 10);
+  }
 
-    if (facingLeft) {
-      // Mirror: translate to right edge, flip, draw at origin offset
-      ctx.save();
-      ctx.translate(rx + dw, ry);
-      ctx.scale(-1, 1);
-      ctx.drawImage(_sheet, sheetX, frameY, frameW, frameH, 0, 0, dw, dh);
-      ctx.restore();
-    } else {
-      ctx.drawImage(_sheet, sheetX, frameY, frameW, frameH, rx, ry, dw, dh);
+  // ── Furniture props (decorative, no collision) ────────────
+  function drawFurniture(ctx) {
+    // Desk cluster — center-right
+    const desks = [
+      { x: 448, y:  80 },
+      { x: 528, y:  80 },
+      { x: 608, y:  80 },
+      { x: 480, y: 176 },
+      { x: 560, y: 176 },
+    ];
+    const DESK_W = 64;
+    const DESK_H = 40;
+    for (let i = 0; i < desks.length; i++) {
+      const d = desks[i];
+      // Desk top
+      ctx.fillStyle = '#f0f0ec';
+      ctx.fillRect(d.x, d.y, DESK_W, DESK_H);
+      // Darker bottom edge (gives the desk a sense of depth)
+      ctx.fillStyle = '#d8d8d4';
+      ctx.fillRect(d.x, d.y + DESK_H - 4, DESK_W, 4);
+      ctx.fillRect(d.x + DESK_W - 3, d.y, 3, DESK_H);
+      // Monitor — small dark rectangle centered on the back of the desk
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(d.x + DESK_W / 2 - 5, d.y + 4, 10, 8);
+      // Monitor stand
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(d.x + DESK_W / 2 - 1, d.y + 12, 2, 3);
     }
+
+    // Watercooler — lower-left
+    const wcX = 48, wcY = 384;
+    // Body
+    ctx.fillStyle = '#b8d4e0';
+    ctx.fillRect(wcX, wcY, 24, 48);
+    // Water tank (upper portion, lighter blue)
+    ctx.fillStyle = '#cce4ef';
+    ctx.fillRect(wcX + 3, wcY + 2, 18, 22);
+    // White label band
+    ctx.fillStyle = '#f8f8f8';
+    ctx.fillRect(wcX, wcY + 26, 24, 8);
+    // Small spigot
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillRect(wcX + 10, wcY + 36, 4, 4);
+    // Base
+    ctx.fillStyle = '#888888';
+    ctx.fillRect(wcX, wcY + 42, 24, 6);
+
+    // Potted plant — upper-left
+    const ptX = 48, ptY = 112;
+    // Pot
+    ctx.fillStyle = '#c1634a';
+    ctx.fillRect(ptX, ptY + 20, 28, 20);
+    // Soil line
+    ctx.fillStyle = '#8a3e28';
+    ctx.fillRect(ptX, ptY + 20, 28, 2);
+    // Leaves — three overlapping dark green circles
+    ctx.fillStyle = '#3a6b3a';
+    ctx.beginPath();
+    ctx.arc(ptX + 14, ptY + 14, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ptX + 4,  ptY + 20, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ptX + 24, ptY + 20, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Highlight on the largest leaf cluster
+    ctx.fillStyle = '#4d8a4d';
+    ctx.beginPath();
+    ctx.arc(ptX + 12, ptY + 11, 5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // ── Name label ────────────────────────────────────────────
@@ -87,24 +152,17 @@ const Renderer = (function () {
   }
 
   // ── Main draw call ────────────────────────────────────────
-  // renderState: { [id]: { name, avatar, x, y, dx, dy, walkFrame, facingLeft } }
   function drawFrame(ctx, cw, ch, renderState, _localPlayerId) {
     ctx.clearRect(0, 0, cw, ch);
     drawBackground(ctx, cw, ch);
 
-    if (!_sheet) return;
-
     for (const id in renderState) {
       const p = renderState[id];
       const char = CHARACTERS[p.avatar] || CHARACTERS[0];
-
-      // Pick sprite row: idle (sheetY) or walk step (walkY)
-      const frameY = p.walkFrame ? char.walkY : char.sheetY;
-
-      drawSprite(ctx, char, p.x, p.y, frameY, p.facingLeft);
+      char.draw(ctx, p.x, p.y, p.walkFrame, p.facingLeft);
       drawLabel(ctx, p.name, p.x, p.y);
     }
   }
 
-  return { loadSheet, drawFrame };
+  return { drawFrame };
 }());

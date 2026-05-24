@@ -1,5 +1,5 @@
 // minimap.js — top-right overlay showing all player positions as dots
-// OSRS-style: gold dot for local player, cream dots for others.
+// Corporate palette: teal dot for local player, muted grey-blue for others.
 // Drawn every rAF tick by game.js.
 
 const Minimap = (function () {
@@ -35,8 +35,8 @@ const Minimap = (function () {
       const my = (p.y + SPRITE_H / 2) * SCALE;
 
       _ctx.fillStyle = id === localId
-        ? '#ffd700'                      // gold — local player (R8)
-        : 'rgba(240, 230, 200, 0.85)';  // cream — other players (R8)
+        ? '#4a7c8e'                       // teal — local player
+        : 'rgba(140, 160, 165, 0.85)';   // muted grey-blue — other players
 
       _ctx.beginPath();
       _ctx.arc(mx, my, DOT_RADIUS, 0, Math.PI * 2);

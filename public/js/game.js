@@ -107,10 +107,8 @@
   // ── rAF loop ──────────────────────────────────────────────
   let lastTime = null;
 
-  Renderer.loadSheet(() => {
-    // Start loop after sheet is ready
-    requestAnimationFrame(loop);
-  });
+  // Characters are code-drawn — no asset loading gate needed.
+  requestAnimationFrame(loop);
 
   function lerp(a, b, t) {
     return a + (b - a) * t;
