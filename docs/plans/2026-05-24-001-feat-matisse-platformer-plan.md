@@ -2,7 +2,7 @@
 title: "feat: Matisse-style 2D platformer vibe-shift for local-chat"
 date: 2026-05-24
 type: feat
-status: active
+status: completed
 depth: deep
 origin: docs/brainstorms/matisse-platformer-requirements.md
 ---
