@@ -1,11 +1,13 @@
 // playwright.config.js — uses system chromium (no download needed)
 const { defineConfig } = require('@playwright/test');
 
+const BASE = process.env.TEST_BASE || 'http://localhost';
+
 module.exports = defineConfig({
   testDir: './test/browser',
   timeout: 20000,
   use: {
-    baseURL: 'http://localhost',
+    baseURL: BASE,
     headless: true,
     viewport: { width: 1280, height: 720 },
     launchOptions: {

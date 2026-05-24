@@ -175,24 +175,26 @@ test.describe('Movement', () => {
   test('pressing right moves player x rightward', async ({ page }) => {
     await joinAs(page, 'MoveTest');
 
-    // Get initial position
+    // Click the canvas to ensure keyboard events are routed to the document
+    await page.click('#game-canvas');
+
     const before = await page.evaluate(() => {
       const rs = Object.values(window._renderStateExposed || {});
       return rs[0] ? { x: rs[0].x } : null;
     });
 
-    // Hold right for 300ms
+    // Hold right for 500ms to allow several physics frames
     await page.keyboard.down('ArrowRight');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
     await page.keyboard.up('ArrowRight');
+
+    await page.waitForTimeout(100);  // one more rAF cycle
 
     const after = await page.evaluate(() => {
       const rs = Object.values(window._renderStateExposed || {});
       return rs[0] ? { x: rs[0].x } : null;
     });
 
-    // Movement test requires renderState to be exposed; skip if not available
-    // (full verification is visual)
     if (before && after) {
       expect(after.x).toBeGreaterThan(before.x);
     } else {

@@ -97,7 +97,8 @@ const Chat = (function () {
     const canvasW  = canvasEl.width  || window.innerWidth;
     const canvasH  = canvasEl.height || window.innerHeight;
     const cameraX  = window._cameraX || 0;
-    const scale    = canvasW / (World.VIEWPORT_W || 800);
+    // Must match renderer.js: scale = canvasH / WORLD_H (height-based)
+    const scale    = canvasH / (World.WORLD_H || 900);
 
     const blobW    = (BlobGen && BlobGen.LOGICAL_W) || 56;
     const blobH    = (BlobGen && BlobGen.LOGICAL_H) || 80;
