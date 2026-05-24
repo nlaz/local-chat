@@ -1,82 +1,105 @@
-// game.js — main game loop, state manager, Socket.IO client
+// game.js — main game loop, camera, Socket.IO client
 // Owns renderState (client-side lerp copy), drives rAF loop.
+// Canvas is sized to fill the window; camera follows local player.
+
+/* global World, Renderer, Input, Chat, Minimap */
 
 (function () {
-  const CANVAS_W = 800;
-  const CANVAS_H = 600;
-  const LERP_FACTOR = 0.2;
+  const LERP_FACTOR    = 0.18;
+  const CAM_LERP       = 0.12;   // camera smoothing
+  const SNAP_THRESHOLD = 250;    // world units — snap-correct if prediction drifts this far
 
-  // ── Canvas setup ──────────────────────────────────────────
+  // ── Canvas setup (full-screen, resizes with window) ──────────────────────
   const canvas = document.getElementById('game-canvas');
   const ctx    = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled        = false;
-  ctx.webkitImageSmoothingEnabled  = false;
+  ctx.imageSmoothingEnabled = false;
 
-  // ── CSS scaling — keeps 800×600 logical coords, fills viewport ──
-  function scaleCanvas() {
-    const S = Math.min(window.innerWidth / 800, window.innerHeight / 600);
-    canvas.style.transform = 'scale(' + S + ')';
-    window._canvasScale = S;
+  function resizeCanvas() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // Expose for bubble layer positioning
+    window._canvasW = canvas.width;
+    window._canvasH = canvas.height;
   }
 
-  // Apply immediately so canvas is scaled when #game-screen becomes visible
-  scaleCanvas();
+  resizeCanvas();
 
-  // Debounced resize listener
   let _resizeTimer = null;
-  window.addEventListener('resize', function () {
+  window.addEventListener('resize', () => {
     clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(scaleCanvas, 100);
+    _resizeTimer = setTimeout(resizeCanvas, 16);
   });
 
-  // ── State ─────────────────────────────────────────────────
+  // ── State ─────────────────────────────────────────────────────────────────
   let localId     = null;
   let serverState = {};   // latest snapshot from server
   let renderState = {};   // interpolated copy used for drawing
+  let cameraX     = 0;    // left edge of viewport in world coords
 
-  // ── Socket ────────────────────────────────────────────────
-  const socket = io();
-  window._socket = socket;   // entry.js and chat.js read this
+  // ── Socket ────────────────────────────────────────────────────────────────
+  const socket    = io();
+  window._socket  = socket;
 
-  // ── Socket events ─────────────────────────────────────────
+  // ── Socket events ──────────────────────────────────────────────────────────
   socket.on('game:init', (data) => {
     localId = data.selfId;
 
-    // Seed both states from server snapshot
+    // Merge world config from server (same as World module but official)
+    if (data.world) Object.assign(World, data.world);
+
     serverState = {};
     for (const id in data.players) {
       serverState[id] = Object.assign({}, data.players[id]);
     }
     renderState = {};
     for (const id in serverState) {
-      renderState[id] = Object.assign({ walkFrame: false, facingLeft: false }, serverState[id]);
+      renderState[id] = Object.assign({ walkTimer: 0 }, serverState[id]);
     }
 
-    // Bootstrap local player position from server-assigned spawn
-    if (renderState[localId]) {
-      Input.setPosition(renderState[localId].x, renderState[localId].y);
+    // Pre-render blobs for existing players; stamp color onto renderState
+    for (const id in serverState) {
+      const blob = Renderer.cacheBlob(id, serverState[id].seed);
+      if (blob) renderState[id].color = blob.color;
     }
 
-    // Wire up chat after we know our ID
+    // Seed local player position for Input
+    if (serverState[localId]) {
+      Input.setPosition(serverState[localId].x, serverState[localId].y);
+      cameraX = clampCamera(serverState[localId].x);
+    }
+
     Chat.init(socket, localId, renderState);
-
-    // Initialise minimap canvas context
     Minimap.init();
   });
 
   socket.on('player:joined', (player) => {
     serverState[player.id] = player;
-    renderState[player.id] = renderState[player.id] ||
-      Object.assign({ walkFrame: false, facingLeft: false }, player);
+    renderState[player.id] = renderState[player.id] || Object.assign({ walkTimer: 0 }, player);
+    const blobJ = Renderer.cacheBlob(player.id, player.seed);
+    if (blobJ) renderState[player.id].color = blobJ.color;
   });
 
   socket.on('game:state', (players) => {
-    // Merge server snapshot; preserve render-only fields
     for (const id in players) {
       if (!serverState[id]) {
         serverState[id] = players[id];
-        renderState[id] = Object.assign({ walkFrame: false, facingLeft: false }, players[id]);
+        renderState[id] = Object.assign({ walkTimer: 0 }, players[id]);
+        const blobS = Renderer.cacheBlob(id, players[id].seed);
+        if (blobS) renderState[id].color = blobS.color;
       } else {
+        // Snap-correct local player if prediction drifted too far
+        if (id === localId) {
+          const srv = players[id];
+          const rnd = renderState[id];
+          const dx  = srv.x - rnd.x;
+          const dy  = srv.y - rnd.y;
+          if (Math.sqrt(dx * dx + dy * dy) > SNAP_THRESHOLD) {
+            renderState[id].x = srv.x;
+            renderState[id].y = srv.y;
+            // Pass server velocity + stoodOn so a snap never cancels a jump in flight
+            Input.setPosition(srv.x, srv.y, srv.vy, srv.stoodOn);
+          }
+        }
         Object.assign(serverState[id], players[id]);
       }
     }
@@ -85,6 +108,8 @@
       if (!players[id]) {
         delete serverState[id];
         delete renderState[id];
+        Renderer.uncacheBlob(id);
+        Chat.removeBubble(id);
       }
     }
   });
@@ -92,6 +117,7 @@
   socket.on('player:left', ({ id }) => {
     delete serverState[id];
     delete renderState[id];
+    Renderer.uncacheBlob(id);
     Chat.removeBubble(id);
   });
 
@@ -99,18 +125,28 @@
     if (window._entryHandleJoinError) window._entryHandleJoinError(data);
   });
 
-  // Re-join after reconnect (transport re-established by Socket.IO)
   socket.on('connect', () => {
     if (window._reJoin) window._reJoin();
   });
 
-  // ── rAF loop ──────────────────────────────────────────────
+  // ── Camera ─────────────────────────────────────────────────────────────────
+  // Visible world width depends on screen size: visibleW = canvas.width / scale
+  // where scale = canvas.height / WORLD_H.
+  function visibleWorldW() {
+    const scale = (canvas.height || window.innerHeight) / World.WORLD_H;
+    return (canvas.width || window.innerWidth) / scale;
+  }
+
+  function clampCamera(playerX) {
+    const vw     = visibleWorldW();
+    const maxCam = Math.max(0, World.WORLD_W - vw);
+    return Math.max(0, Math.min(maxCam, playerX - vw / 2 + World.BLOB_W / 2));
+  }
+
+  // ── rAF loop ───────────────────────────────────────────────────────────────
   let lastTime = null;
 
-  Renderer.loadSheet(() => {
-    // Start loop after sheet is ready
-    requestAnimationFrame(loop);
-  });
+  requestAnimationFrame(loop);
 
   function lerp(a, b, t) {
     return a + (b - a) * t;
@@ -121,52 +157,50 @@
 
     const dt = lastTime ? Math.min(ts - lastTime, 100) : 16;
     lastTime = ts;
+    const dtS = dt / 1000;
 
-    // ── Update local player from Input ──────────────────────
+    // ── Local player: run client-side prediction ─────────────────────────
     if (localId && renderState[localId]) {
-      const { x, y, dx, dy, walkFrame, facingLeft } = Input.update(dt);
-      renderState[localId].x         = x;
-      renderState[localId].y         = y;
-      renderState[localId].dx        = dx;
-      renderState[localId].dy        = dy;
-      renderState[localId].walkFrame = walkFrame;
-      renderState[localId].facingLeft = facingLeft;
+      const { x, y, vx, vy, facingLeft } = Input.update(dtS);
+      renderState[localId].x          = x;
+      renderState[localId].y          = y;
+      renderState[localId].vx         = vx;
+      renderState[localId].vy         = vy;
+      renderState[localId].facingLeft  = facingLeft;
     }
 
-    // ── Lerp other players ──────────────────────────────────
+    // ── Lerp remote players ───────────────────────────────────────────────
     for (const id in renderState) {
       if (id === localId) continue;
       const rs = renderState[id];
       const ss = serverState[id];
       if (!ss) continue;
+
       rs.x = lerp(rs.x, ss.x, LERP_FACTOR);
       rs.y = lerp(rs.y, ss.y, LERP_FACTOR);
-      rs.dx = ss.dx;
-      rs.dy = ss.dy;
-
-      // Walk animation for remote players based on dx/dy
-      const moving = Math.abs(ss.dx) > 0.5 || Math.abs(ss.dy) > 0.5;
-      if (moving) {
-        rs._walkTimer = (rs._walkTimer || 0) + dt;
-        if (rs._walkTimer > 400) rs._walkTimer = 0;
-        rs.walkFrame = rs._walkTimer < 200;
-      } else {
-        rs.walkFrame = false;
-        rs._walkTimer = 0;
-      }
-      if (ss.dx < -0.5) rs.facingLeft = true;
-      else if (ss.dx > 0.5) rs.facingLeft = false;
+      rs.vx = ss.vx;
+      rs.vy = ss.vy;
+      rs.facingLeft = ss.facingLeft;
     }
 
-    // ── Update bubble positions ──────────────────────────────
-    Chat.updateBubbles(renderState);
+    // ── Camera follow ─────────────────────────────────────────────────────
+    if (localId && renderState[localId]) {
+      const targetCamX = clampCamera(renderState[localId].x);
+      cameraX = lerp(cameraX, targetCamX, CAM_LERP);
+    }
 
-    // ── Draw ────────────────────────────────────────────────
-    Renderer.drawFrame(ctx, CANVAS_W, CANVAS_H, renderState, localId);
-    Minimap.draw(renderState, localId);
+    // ── Update bubble positions ───────────────────────────────────────────
+    Chat.updateBubbles(renderState, cameraX, canvas.width);
+
+    // ── Draw ──────────────────────────────────────────────────────────────
+    Renderer.drawFrame(ctx, canvas.width, canvas.height, renderState, localId, cameraX);
+    Minimap.draw(renderState, localId, cameraX);
   }
 
-  // Expose canvas dimensions for bubble positioning and minimap
-  window._canvasW = CANVAS_W;
-  window._canvasH = CANVAS_H;
+  // Expose camera and canvas info for chat.js bubble positioning
+  Object.defineProperty(window, '_cameraX', { get: () => cameraX });
+
+  // Expose renderState for browser tests
+  Object.defineProperty(window, '_renderStateExposed', { get: () => renderState });
+
 }());

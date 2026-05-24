@@ -87,11 +87,12 @@ sudo systemctl restart local-chat
 
 1. Connect to the event WiFi
 2. Open `http://chat.local` in a browser
-3. Pick a character and type your name → **Enter →**
-4. Walk around with **Arrow keys** or **WASD**
-5. Chat in the panel on the right; your message appears as a speech bubble above your avatar for ~4 seconds
+3. Type your name → **Enter →** (your blob is generated from your name automatically)
+4. Walk with **Arrow keys** or **WASD** · Jump with **↑ / W / Space**
+5. Land on someone's head to stack; they'll carry you as they walk
+6. Chat in the panel on the bottom-left; your message appears as a bubble above your blob for ~4 seconds
 
-> **Mobile users:** Chat works but movement controls are keyboard-only — your avatar will appear at a fixed spot in the room.
+> **Mobile users:** Chat works, but movement and jumping require a keyboard — your blob will stay at spawn.
 
 ---
 
@@ -101,24 +102,42 @@ sudo systemctl restart local-chat
 local-chat/
 ├── .gitignore
 ├── package.json
-├── server.js                  # Express + Socket.IO server, 20 Hz game loop
+├── server.js                  # Express + Socket.IO, 60 Hz physics tick, 20 Hz broadcast
 ├── local-chat.service         # systemd unit
 ├── README.md
+├── test/
+│   ├── smoke.test.js          # node --test runner check
+│   ├── physics.test.js        # 27 physics unit tests
+│   └── server.test.js         # 3 integration tests
 └── public/
     ├── index.html             # Single-page app shell
-    ├── css/style.css          # All styles
-    ├── js/
-    │   ├── characters.js      # Sprite sheet config (6 characters)
-    │   ├── entry.js           # Avatar selection + name entry
-    │   ├── game.js            # Socket.IO client, rAF loop, lerp interpolation
-    │   ├── renderer.js        # Canvas sprite + label drawing
-    │   ├── input.js           # Keyboard input, movement, boundary clamp
-    │   └── chat.js            # Chat panel + speech bubble overlay
-    └── assets/
-        └── characters.png     # Kenney Roguelike Characters (CC0)
+    ├── css/style.css          # Matisse palette — CSS variables, serif + ink
+    └── js/
+        ├── world.js           # Shared world constants (WORLD_W, platforms, physics)
+        ├── physics.js         # Pure-function physics (dual-export Node + browser)
+        ├── prng.js            # Seeded LCG for deterministic blob generation
+        ├── blob.js            # Procedural Matisse blob avatar renderer
+        ├── entry.js           # Name-only entry screen
+        ├── game.js            # Socket.IO client, rAF loop, camera, prediction
+        ├── renderer.js        # Matisse canvas renderer (blobs, platforms, cutouts)
+        ├── input.js           # Keyboard → player:input intents
+        ├── chat.js            # Chat panel + camera-aware speech bubbles
+        └── minimap.js         # Scrolling-world minimap with camera rect
 ```
 
-**Real-time flow:** Socket.IO WebSocket → server game loop at 20 Hz broadcasts `game:state` to all clients → clients lerp-interpolate toward server positions each animation frame.
+**Real-time flow:** Client emits `player:input` intents → server runs `physics.step` at 60 Hz → broadcasts `game:state` at 20 Hz → clients lerp remote players and run local prediction.
+
+---
+
+## Development
+
+Server-side tests use Node 20's built-in test runner (no dependencies):
+
+```bash
+npm test
+```
+
+UI and visual behavior is verified manually in-browser.
 
 ---
 

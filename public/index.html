@@ -4,19 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Local Chat</title>
+  <!-- Fraunces display serif — loads async, Georgia fallback if no internet -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,400&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
   <!-- ── Entry screen ─────────────────────────────────────── -->
   <div id="entry-screen">
-    <div class="entry-card">
-      <h1 class="entry-title">Local Chat</h1>
-      <p class="entry-sub">Pick a character and enter a name to join</p>
 
-      <div id="avatar-grid" class="avatar-grid">
-        <!-- 6 avatar cards injected by entry.js -->
-      </div>
+    <!-- Matisse cutout shapes scattered in the background -->
+    <div class="entry-shapes" aria-hidden="true">
+      <span class="es es-1"></span>
+      <span class="es es-2"></span>
+      <span class="es es-3"></span>
+      <span class="es es-4"></span>
+      <span class="es es-5"></span>
+      <span class="es es-6"></span>
+    </div>
+
+    <div class="entry-card">
+      <div class="entry-color-bar"></div>
+
+      <h1 class="entry-title">Local Chat</h1>
+      <p class="entry-sub">what's your name?</p>
 
       <div class="name-row">
         <input
@@ -38,22 +51,26 @@
   <div id="game-screen" class="hidden">
     <div class="game-layout">
 
-      <!-- Canvas + bubble overlay -->
+      <!-- Full-screen canvas (sized at runtime by game.js) -->
       <div class="canvas-wrapper">
-        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <canvas id="game-canvas"></canvas>
         <div id="bubble-layer"></div>
 
         <!-- Mobile notice — shown only on touch devices -->
         <div id="mobile-notice" class="mobile-notice hidden">
-          ⌨ Movement uses keyboard arrow keys or WASD — not available on mobile
+          ⌨ Movement uses keyboard — not available on mobile
         </div>
       </div>
 
     </div>
   </div>
 
-  <!-- Chat overlay — fixed bottom-left, outside any transformed stacking context -->
-  <div class="chat-panel chat-overlay">
+  <!-- Chat overlay — fixed bottom-left; hidden until game starts -->
+  <div class="chat-panel chat-overlay hidden">
+    <div class="chat-header">
+      <span class="chat-header-dot"></span>
+      chat
+    </div>
     <div id="chat-log" class="chat-log"></div>
     <div class="chat-input-row">
       <input
@@ -67,12 +84,15 @@
     </div>
   </div>
 
-  <!-- Minimap overlay — fixed top-right, outside any transformed stacking context -->
-  <canvas id="minimap-canvas" width="200" height="150"></canvas>
+  <!-- Minimap overlay — fixed top-right; hidden until game starts -->
+  <canvas id="minimap-canvas" class="hidden" width="240" height="135"></canvas>
 
-  <!-- Scripts -->
+  <!-- Scripts — world and physics loaded first (shared constants) -->
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/characters.js"></script>
+  <script src="/js/world.js"></script>
+  <script src="/js/physics.js"></script>
+  <script src="/js/prng.js"></script>
+  <script src="/js/blob.js"></script>
   <script src="/js/entry.js"></script>
   <script src="/js/chat.js"></script>
   <script src="/js/renderer.js"></script>

@@ -1,20 +1,21 @@
 // chat.js — chat panel (message log + input) and speech bubble overlay
 // Initialized by game.js once the socket and local player ID are known.
+// Bubble positioning accounts for camera offset and blob logical size.
+
+/* global World, BlobGen */
 
 const Chat = (function () {
   const BUBBLE_DURATION = 4000;   // ms
 
-  let _socket       = null;
-  let _localId      = null;
-  let _renderState  = null;
+  let _socket      = null;
+  let _localId     = null;
+  let _renderState = null;
 
-  // DOM refs — populated in init()
   let chatLog, chatInput, sendBtn, bubbleLayer;
 
-  // Active bubble elements keyed by player socket ID
   const activeBubbles = {};
 
-  // ── Init ──────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────────
   function init(socket, localId, renderState) {
     _socket      = socket;
     _localId     = localId;
@@ -25,7 +26,6 @@ const Chat = (function () {
     sendBtn     = document.getElementById('send-btn');
     bubbleLayer = document.getElementById('bubble-layer');
 
-    // ── Send message ──────────────────────────────────────
     function sendMessage() {
       const text = chatInput.value.trim();
       if (!text) return;
@@ -38,19 +38,16 @@ const Chat = (function () {
     });
     sendBtn.addEventListener('click', sendMessage);
 
-    // ── Receive messages ──────────────────────────────────
     _socket.on('chat:message', ({ id, name, text }) => {
       appendToLog(name, text);
-
-      // Show bubble — position comes from renderState at draw time
-      const p = _renderState[id];
+      const p  = _renderState[id];
       const bx = p ? p.x : 0;
       const by = p ? p.y : 0;
       showBubble(id, text, bx, by);
     });
   }
 
-  // ── Chat log ──────────────────────────────────────────────
+  // ── Chat log ──────────────────────────────────────────────────────────────
   function appendToLog(name, text) {
     const p = document.createElement('p');
 
@@ -65,28 +62,20 @@ const Chat = (function () {
     chatLog.scrollTop = chatLog.scrollHeight;
   }
 
-  // ── Speech bubbles ────────────────────────────────────────
+  // ── Speech bubbles ────────────────────────────────────────────────────────
   function showBubble(playerId, text, x, y) {
-    // Remove existing bubble for this player if present
     removeBubble(playerId);
 
     const div = document.createElement('div');
-    div.className = 'speech-bubble';
-    div.id        = 'bubble-' + playerId;
+    div.className  = 'speech-bubble';
+    div.id         = 'bubble-' + playerId;
     div.textContent = text;
 
-    // Initial position (will be updated every rAF via updateBubbles)
     positionBubble(div, x, y);
-
     bubbleLayer.appendChild(div);
     activeBubbles[playerId] = div;
 
-    // Auto-remove after BUBBLE_DURATION
-    const timer = setTimeout(() => {
-      removeBubble(playerId);
-    }, BUBBLE_DURATION);
-
-    // Store timer so we can cancel if replaced early
+    const timer = setTimeout(() => removeBubble(playerId), BUBBLE_DURATION);
     div._timer = timer;
   }
 
@@ -99,29 +88,37 @@ const Chat = (function () {
     }
   }
 
-  // ── Position a bubble above the player sprite ─────────────
-  // The bubble's CSS uses transform: translateX(-50%), so `left` is the
-  // horizontal centre of the sprite.
-  function positionBubble(div, x, y) {
+  // ── Position bubble above player blob, accounting for camera ──────────────
+  // cameraX and canvasW are pulled from globals set by game.js.
+  function positionBubble(div, worldX, worldY) {
     const canvasEl = document.getElementById('game-canvas');
     if (!canvasEl) return;
 
-    // Scale factor: use global (set by game.js scaleCanvas) with BCR fallback
-    const S = window._canvasScale || (canvasEl.getBoundingClientRect().width / 800);
+    const canvasW  = canvasEl.width  || window.innerWidth;
+    const canvasH  = canvasEl.height || window.innerHeight;
+    const cameraX  = window._cameraX || 0;
+    // Must match renderer.js: scale = canvasH / WORLD_H (height-based)
+    const scale    = canvasH / (World.WORLD_H || 900);
 
-    // Offset of scaled canvas edge within the bubble-layer (handles pillarbox/letterbox)
-    const canvasRect  = canvasEl.getBoundingClientRect();
-    const layerRect   = document.getElementById('bubble-layer').getBoundingClientRect();
-    const offsetX     = canvasRect.left - layerRect.left;
-    const offsetY     = canvasRect.top  - layerRect.top;
+    const blobW    = (BlobGen && BlobGen.LOGICAL_W) || 56;
+    const blobH    = (BlobGen && BlobGen.LOGICAL_H) || 80;
 
-    // Convert logical canvas coords → CSS pixels within scaled canvas
-    div.style.left = (offsetX + x * S + (SPRITE_W / 2) * S) + 'px';
-    div.style.top  = (offsetY + y * S - 14 * S) + 'px';
+    // Convert world coords to screen coords
+    const screenX  = (worldX - cameraX + blobW / 2) * scale;
+    const screenY  = (worldY - 14) * scale;  // 14px above blob top
+
+    // Bubble-layer sits at the same position as the canvas-wrapper
+    const layerRect  = bubbleLayer.getBoundingClientRect();
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const offsetX    = canvasRect.left - layerRect.left;
+    const offsetY    = canvasRect.top  - layerRect.top;
+
+    div.style.left = (offsetX + screenX) + 'px';
+    div.style.top  = (offsetY + screenY) + 'px';
   }
 
-  // ── Called each rAF by game.js to track moving players ────
-  function updateBubbles(renderState) {
+  // ── Called each rAF by game.js ────────────────────────────────────────────
+  function updateBubbles(renderState, cameraX, canvasW) {
     for (const playerId in activeBubbles) {
       const div = activeBubbles[playerId];
       const p   = renderState[playerId];
