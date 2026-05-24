@@ -10,7 +10,7 @@
 
   const GROUND_Y    = 820;   // top of ground surface
   const GRAVITY     = 1800;  // px/s²
-  const JUMP_VY     = -620;  // px/s initial jump velocity (negative = upward)
+  const JUMP_VY     = -1050; // px/s initial jump velocity (negative = upward)
   const MAX_FALL    = 1200;  // terminal velocity px/s
   const WALK_SPEED  = 220;   // px/s horizontal
   const FRICTION    = 0.0;   // instant stop (0 = no slide)
