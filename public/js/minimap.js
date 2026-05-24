@@ -1,46 +1,85 @@
-// minimap.js — top-right overlay showing all player positions as dots
-// OSRS-style: gold dot for local player, cream dots for others.
-// Drawn every rAF tick by game.js.
+// minimap.js — scrolling-world-aware minimap
+// Shows full world width as a narrow strip. Each player is a colored dot
+// in their blob's primary color. A faint rect shows the current camera view.
+
+/* global World */
 
 const Minimap = (function () {
-  const MAP_W      = 200;
-  const MAP_H      = 150;
-  const SCALE      = MAP_W / 800;   // 0.25 — matches 4:3 logical canvas
+  // Physical canvas size (matches index.html attributes)
+  const MAP_W = 240;
+  const MAP_H = 135;
+
+  // Scale: logical world units → minimap pixels
+  const SCALE_X = MAP_W / (World.WORLD_W || 1600);
+  const SCALE_Y = MAP_H / (World.WORLD_H || 900);
+
   const DOT_RADIUS = 4;
 
-  let _ctx = null;
+  const PAPER     = '#f5efe0';
+  const INK       = '#0d1b2a';
+  const CAM_COLOR = 'rgba(13, 27, 42, 0.25)';
+  const GROUND_COLOR = '#2a9d3f';
 
-  // ── Init — called once after game:init ─────────────────────
+  let _ctx    = null;
+  let _scaleX = SCALE_X;
+  let _scaleY = SCALE_Y;
+
+  // ── Init — called once after game:init ─────────────────────────────────────
   function init() {
     const el = document.getElementById('minimap-canvas');
     if (!el) return;
     _ctx = el.getContext('2d');
-    _ctx.imageSmoothingEnabled = false;
+    // Recalculate scale after World may have been updated by server
+    _scaleX = MAP_W / (World.WORLD_W || 1600);
+    _scaleY = MAP_H / (World.WORLD_H || 900);
   }
 
-  // ── Draw — called every rAF tick ───────────────────────────
-  // renderState: { [id]: { x, y, ... } }
-  // localId:     socket id of the local player
-  function draw(renderState, localId) {
+  // ── Draw — called every rAF tick ─────────────────────────────────────────
+  // renderState: { [id]: { x, y, color (from blob cache via game.js lookup) } }
+  // localId:  socket id of local player
+  // cameraX:  current camera left edge in world coords
+  function draw(renderState, localId, cameraX) {
     if (!_ctx) return;
 
-    _ctx.clearRect(0, 0, MAP_W, MAP_H);
+    // Background
+    _ctx.fillStyle = PAPER;
+    _ctx.fillRect(0, 0, MAP_W, MAP_H);
 
+    // Ground strip (bottom of minimap)
+    const groundMapY = (World.GROUND_Y || 820) * _scaleY;
+    _ctx.fillStyle = GROUND_COLOR;
+    _ctx.fillRect(0, groundMapY, MAP_W, MAP_H - groundMapY);
+
+    // Camera viewport rect
+    if (cameraX !== undefined) {
+      const vwMap = (World.VIEWPORT_W || 800) * _scaleX;
+      const camMapX = cameraX * _scaleX;
+      _ctx.fillStyle = CAM_COLOR;
+      _ctx.fillRect(camMapX, 0, vwMap, MAP_H);
+      _ctx.strokeStyle = INK;
+      _ctx.lineWidth   = 1;
+      _ctx.strokeRect(camMapX, 0, vwMap, MAP_H);
+    }
+
+    // Player dots
     for (const id in renderState) {
       const p = renderState[id];
       if (p == null || p.x == null) continue;
 
-      // Centre dot on sprite midpoint
-      const mx = (p.x + SPRITE_W  / 2) * SCALE;
-      const my = (p.y + SPRITE_H / 2) * SCALE;
+      // Centre dot on blob midpoint
+      const mx = (p.x + (World.BLOB_W || 56) / 2) * _scaleX;
+      const my = (p.y + (World.BLOB_H || 80) / 2) * _scaleY;
 
-      _ctx.fillStyle = id === localId
-        ? '#ffd700'                      // gold — local player (R8)
-        : 'rgba(240, 230, 200, 0.85)';  // cream — other players (R8)
+      // Use blob's primary color if available, fall back to ink/red
+      const dotColor = p.color || (id === localId ? '#e63946' : '#1d4e89');
 
       _ctx.beginPath();
       _ctx.arc(mx, my, DOT_RADIUS, 0, Math.PI * 2);
+      _ctx.fillStyle = dotColor;
       _ctx.fill();
+      _ctx.strokeStyle = INK;
+      _ctx.lineWidth   = 1.5;
+      _ctx.stroke();
     }
   }
 

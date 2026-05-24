@@ -56,9 +56,10 @@
       renderState[id] = Object.assign({ walkTimer: 0 }, serverState[id]);
     }
 
-    // Pre-render blobs for existing players
+    // Pre-render blobs for existing players; stamp color onto renderState
     for (const id in serverState) {
-      Renderer.cacheBlob(id, serverState[id].seed);
+      const blob = Renderer.cacheBlob(id, serverState[id].seed);
+      if (blob) renderState[id].color = blob.color;
     }
 
     // Seed local player position for Input
@@ -74,7 +75,8 @@
   socket.on('player:joined', (player) => {
     serverState[player.id] = player;
     renderState[player.id] = renderState[player.id] || Object.assign({ walkTimer: 0 }, player);
-    Renderer.cacheBlob(player.id, player.seed);
+    const blobJ = Renderer.cacheBlob(player.id, player.seed);
+    if (blobJ) renderState[player.id].color = blobJ.color;
   });
 
   socket.on('game:state', (players) => {
@@ -82,7 +84,8 @@
       if (!serverState[id]) {
         serverState[id] = players[id];
         renderState[id] = Object.assign({ walkTimer: 0 }, players[id]);
-        Renderer.cacheBlob(id, players[id].seed);
+        const blobS = Renderer.cacheBlob(id, players[id].seed);
+        if (blobS) renderState[id].color = blobS.color;
       } else {
         // Snap-correct local player if prediction drifted too far
         if (id === localId) {
