@@ -307,8 +307,9 @@ test.describe('Blob generation', () => {
     expect(blobOk.hasCanvas).toBe(true);
     expect(blobOk.hasFlipped).toBe(true);
     expect(blobOk.hasColor).toBe(true);
-    expect(blobOk.w).toBe(56);
-    expect(blobOk.h).toBe(80);
+    // Canvas is rendered at 3× resolution (RS=3) for crisp anti-aliased outlines
+    expect(blobOk.w).toBe(56 * 3);
+    expect(blobOk.h).toBe(80 * 3);
   });
 
   test('same seed produces same color', async ({ page }) => {

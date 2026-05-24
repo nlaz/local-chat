@@ -25,6 +25,10 @@
   const LOGICAL_W = 56;
   const LOGICAL_H = 80;
 
+  // Internal render resolution multiplier — blobs are drawn at 3× and then
+  // scaled down by drawImage, producing crisp anti-aliased outlines.
+  const RS = 3;
+
   // ── Blob point generator ────────────────────────────────────────────────
   function blobPoints(prng, cx, cy, baseRX, baseRY, numPts, jitter) {
     const pts = [];
@@ -195,19 +199,21 @@
       ctx.stroke();
     }
 
-    // Normal-facing canvas
+    // Normal-facing canvas — rendered at RS× resolution for crisp outlines
     const canvas = document.createElement('canvas');
-    canvas.width  = LOGICAL_W;
-    canvas.height = LOGICAL_H;
-    drawBlob(canvas.getContext('2d'));
+    canvas.width  = LOGICAL_W * RS;
+    canvas.height = LOGICAL_H * RS;
+    const ctx2 = canvas.getContext('2d');
+    ctx2.scale(RS, RS);
+    drawBlob(ctx2);
 
     // Flipped (facing-left) canvas
     const canvasFlipped = document.createElement('canvas');
-    canvasFlipped.width  = LOGICAL_W;
-    canvasFlipped.height = LOGICAL_H;
+    canvasFlipped.width  = LOGICAL_W * RS;
+    canvasFlipped.height = LOGICAL_H * RS;
     const ctxF = canvasFlipped.getContext('2d');
-    ctxF.translate(LOGICAL_W, 0);
-    ctxF.scale(-1, 1);
+    ctxF.translate(LOGICAL_W * RS, 0);
+    ctxF.scale(-RS, RS);
     drawBlob(ctxF);
 
     const headTop = headCY - headRY * 1.3;

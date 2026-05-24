@@ -219,6 +219,10 @@ const Renderer = (function () {
     const drawW = bw * BLOB_DRAW_SCALE;
     const drawH = bh * BLOB_DRAW_SCALE;
 
+    // High-quality downsampling from the 3× source canvases → crisp outlines
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
     for (const id in renderState) {
       const p    = renderState[id];
       const blob = blobCache[id];
