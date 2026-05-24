@@ -8,12 +8,12 @@ const path     = require('path');
 
 // ── Config ──────────────────────────────────────────────────
 const PORT        = process.env.PORT || 80;
-const WORLD_W     = 2400;  // logical world width
-const WORLD_H     = 1800;  // logical world height
+const WORLD_W     = 1200;  // logical world width  (1.5× original 800)
+const WORLD_H     = 900;   // logical world height (1.5× original 600)
 const WALL_INSET  = 16;
 const SPRITE_W    = 48;    // 16px × 3 scale
 const SPRITE_H    = 48;
-const SPAWN_PAD   = 200;   // px inset from walls for spawn zone (centered cluster)
+const SPAWN_PAD   = 120;   // px inset from walls for spawn zone (centered cluster)
 const TICK_HZ     = 20;
 const TICK_MS     = 1000 / TICK_HZ;
 const MAX_CHAT    = 200;

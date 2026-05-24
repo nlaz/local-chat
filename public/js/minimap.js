@@ -9,8 +9,8 @@ const Minimap = (function () {
 
   let _ctx = null;
 
-  function scaleX() { return MAP_W / (window._worldW || 2400); }
-  function scaleY() { return MAP_H / (window._worldH || 1800); }
+  function scaleX() { return MAP_W / (window._worldW || 1200); }
+  function scaleY() { return MAP_H / (window._worldH || 900); }
 
   // ── Init — called once after game:init ─────────────────────
   function init() {

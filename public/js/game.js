@@ -3,8 +3,8 @@
 // Canvas fills the viewport; renderer draws the world with a camera that follows the local player.
 
 (function () {
-  const WORLD_W     = 2400;
-  const WORLD_H     = 1800;
+  const WORLD_W     = 1200;
+  const WORLD_H     = 900;
   const LERP_FACTOR = 0.2;
 
   // ── Canvas setup ──────────────────────────────────────────

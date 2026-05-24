@@ -66,7 +66,7 @@ const Renderer = (function () {
     const panelW = 160;
     const panelH = 10;
     const startX = 80;
-    const rows = [26, 246, 466, 686, 906, 1126, 1346, 1566];
+    const rows = [26, 280, 540];
     for (let r = 0; r < rows.length; r++) {
       const y = rows[r];
       if (y > wh - WALL_WIDTH - panelH) break;
@@ -77,39 +77,25 @@ const Renderer = (function () {
   }
 
   // ── Furniture props (decorative) ──────────────────────────
-  // Multiple desk clusters, watercoolers, and plants spread across the world.
+  // Three desk clusters along the right/center, watercoolers and plants on the left/edges.
   function drawFurniture(ctx, ww, wh) {
-    // Desk clusters — five-desk pods repeated across the floor
     const clusters = [
-      { x:  400, y:  120 },
-      { x:  400, y:  720 },
-      { x:  400, y: 1320 },
-      { x: 1280, y:  120 },
-      { x: 1280, y:  720 },
-      { x: 1280, y: 1320 },
-      { x: 1880, y:  120 },
-      { x: 1880, y:  720 },
-      { x: 1880, y: 1320 },
+      { x: 560, y: 100 },
+      { x: 560, y: 540 },
+      { x: 880, y: 320 },
     ];
     for (let i = 0; i < clusters.length; i++) drawDeskCluster(ctx, clusters[i].x, clusters[i].y);
 
-    // Watercoolers
     const coolers = [
-      { x:  80, y:  260 },
-      { x:  80, y: 1180 },
-      { x: 2280, y: 580 },
-      { x: 2280, y: 1480 },
+      { x:  60, y: 420 },
+      { x: 1100, y: 760 },
     ];
     for (let i = 0; i < coolers.length; i++) drawWatercooler(ctx, coolers[i].x, coolers[i].y);
 
-    // Potted plants
     const plants = [
-      { x:  80, y:   80 },
-      { x:  80, y:  900 },
-      { x:  80, y: 1700 - 40 },
-      { x: 2280, y:   80 },
-      { x: 2280, y: 1700 - 40 },
-      { x: 1180, y: 1700 - 40 },
+      { x:   60, y: 100 },
+      { x:   60, y: 760 },
+      { x: 1100, y: 100 },
     ];
     for (let i = 0; i < plants.length; i++) drawPottedPlant(ctx, plants[i].x, plants[i].y);
   }

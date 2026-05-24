@@ -2,7 +2,7 @@
 // Exports a single `Input` object consumed by game.js each rAF tick.
 
 const Input = (function () {
-  const SPEED      = 4;     // pixels per frame at 60fps
+  const SPEED      = 3;     // pixels per frame at 60fps
   const WALK_CYCLE = 400;   // ms for a full walk cycle
   const ROOM_INSET = 16;    // wall width — matches renderer wall thickness
 
@@ -18,8 +18,8 @@ const Input = (function () {
 
   // Boundaries computed lazily from world size (set in game.js)
   function bounds() {
-    const ww = window._worldW || 2400;
-    const wh = window._worldH || 1800;
+    const ww = window._worldW || 1200;
+    const wh = window._worldH || 900;
     return {
       minX: ROOM_INSET,
       minY: ROOM_INSET,
