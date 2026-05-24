@@ -135,7 +135,10 @@ const Renderer = (function () {
     ctx.clearRect(0, 0, canvasW, canvasH);
 
     // ── Set camera transform ──────────────────────────────────────────────
-    const scale = canvasW / World.VIEWPORT_W;
+    // Scale by height so the full world height always fits the screen.
+    // Visible world width = canvasW / scale (dynamic; may exceed WORLD_W on
+    // wide screens, in which case cameraX is always 0 and no scroll occurs).
+    const scale = canvasH / World.WORLD_H;
     ctx.setTransform(scale, 0, 0, scale, -cameraX * scale, 0);
 
     // ── World drawing ─────────────────────────────────────────────────────

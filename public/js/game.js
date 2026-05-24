@@ -129,9 +129,17 @@
   });
 
   // ── Camera ─────────────────────────────────────────────────────────────────
+  // Visible world width depends on screen size: visibleW = canvas.width / scale
+  // where scale = canvas.height / WORLD_H.
+  function visibleWorldW() {
+    const scale = (canvas.height || window.innerHeight) / World.WORLD_H;
+    return (canvas.width || window.innerWidth) / scale;
+  }
+
   function clampCamera(playerX) {
-    const maxCam = World.WORLD_W - World.VIEWPORT_W;
-    return Math.max(0, Math.min(maxCam, playerX - World.VIEWPORT_W / 2 + World.BLOB_W / 2));
+    const vw     = visibleWorldW();
+    const maxCam = Math.max(0, World.WORLD_W - vw);
+    return Math.max(0, Math.min(maxCam, playerX - vw / 2 + World.BLOB_W / 2));
   }
 
   // ── rAF loop ───────────────────────────────────────────────────────────────
@@ -190,5 +198,8 @@
 
   // Expose camera and canvas info for chat.js bubble positioning
   Object.defineProperty(window, '_cameraX', { get: () => cameraX });
+
+  // Expose renderState for browser tests
+  Object.defineProperty(window, '_renderStateExposed', { get: () => renderState });
 
 }());

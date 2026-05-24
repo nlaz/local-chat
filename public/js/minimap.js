@@ -50,9 +50,11 @@ const Minimap = (function () {
     _ctx.fillStyle = GROUND_COLOR;
     _ctx.fillRect(0, groundMapY, MAP_W, MAP_H - groundMapY);
 
-    // Camera viewport rect
+    // Camera viewport rect — visible world width is dynamic (height-based scale)
     if (cameraX !== undefined) {
-      const vwMap = (World.VIEWPORT_W || 800) * _scaleX;
+      const scale   = (window.innerHeight || 900) / (World.WORLD_H || 900);
+      const visibleW = (window.innerWidth  || 800) / scale;
+      const vwMap   = Math.min(visibleW, World.WORLD_W) * _scaleX;
       const camMapX = cameraX * _scaleX;
       _ctx.fillStyle = CAM_COLOR;
       _ctx.fillRect(camMapX, 0, vwMap, MAP_H);
