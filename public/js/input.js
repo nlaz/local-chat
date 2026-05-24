@@ -1,128 +1,135 @@
-// input.js — keyboard input, movement, boundary clamping, walk animation
-// Exports a single `Input` object consumed by game.js each rAF tick.
+// input.js — keyboard input, physics prediction for local player
+// Emits player:input {left, right, jump} on change (max ~30 Hz via throttle).
+// Runs Physics.step locally for responsive client-side prediction.
+// game.js snap-corrects toward server state on large drift.
+
+/* global World, Physics */
 
 const Input = (function () {
-  const SPEED      = 2;     // pixels per frame at 60fps
-  const WALK_CYCLE = 400;   // ms for a full walk cycle
-  const ROOM_INSET = 16;    // wall width — matches renderer wall thickness
+  // ── State ─────────────────────────────────────────────────────────────────
+  let posX        = 400;
+  let posY        = World.GROUND_Y - World.BLOB_H;
+  let vx          = 0;
+  let vy          = 0;
+  let stoodOn     = 'ground';
+  let prevY       = posY;
+  let facingLeft  = false;
+  let jumpConsumed = false;
 
-  // ── State ─────────────────────────────────────────────────
-  const keysHeld  = new Set();
-  let   posX      = 400;
-  let   posY      = 300;
-  let   lastDx    = 0;
-  let   lastDy    = 0;
-  let   facingLeft = false;
-  let   walkTimer  = 0;
-  let   isMoving   = false;
+  // Current input booleans
+  let iLeft  = false;
+  let iRight = false;
+  let iJump  = false;
 
-  // Boundaries computed lazily from canvas size (set in game.js)
-  function bounds() {
-    const cw = window._canvasW || 800;
-    const ch = window._canvasH || 600;
-    return {
-      minX: ROOM_INSET,
-      minY: ROOM_INSET,
-      maxX: cw - ROOM_INSET - SPRITE_W,
-      maxY: ch - ROOM_INSET - SPRITE_H,
-    };
-  }
+  // Last emitted state (to avoid redundant emits)
+  let lastLeft  = false;
+  let lastRight = false;
+  let lastJump  = false;
 
-  // ── Mobile detection ──────────────────────────────────────
+  // ── Mobile detection ──────────────────────────────────────────────────────
   const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
   if (isMobile) {
-    // Show the mobile notice
     const notice = document.getElementById('mobile-notice');
     if (notice) notice.classList.remove('hidden');
   } else {
-    // Register keyboard listeners only for desktop
     document.addEventListener('keydown', (e) => {
-      // Focus guard: ignore movement keys while chat input is focused
       if (document.activeElement === document.getElementById('chat-input')) return;
-
-      const key = e.key;
-      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
-           'w','a','s','d','W','A','S','D'].includes(key)) {
-        e.preventDefault();
-        keysHeld.add(normalise(key));
-      }
+      const k = normalise(e.key);
+      if (k === 'left')  { e.preventDefault(); iLeft  = true; }
+      if (k === 'right') { e.preventDefault(); iRight = true; }
+      if (k === 'jump')  { e.preventDefault(); iJump  = true; }
+      emitIfChanged();
     });
 
     document.addEventListener('keyup', (e) => {
-      keysHeld.delete(normalise(e.key));
+      const k = normalise(e.key);
+      if (k === 'left')  iLeft  = false;
+      if (k === 'right') iRight = false;
+      if (k === 'jump')  { iJump = false; jumpConsumed = false; }
+      emitIfChanged();
     });
 
-    // Clear all keys if window loses focus (prevents stuck movement)
-    window.addEventListener('blur', () => keysHeld.clear());
+    window.addEventListener('blur', () => {
+      iLeft = iRight = iJump = false;
+      emitIfChanged();
+    });
   }
 
   function normalise(key) {
     switch (key) {
-      case 'ArrowUp':    case 'w': case 'W': return 'up';
-      case 'ArrowDown':  case 's': case 'S': return 'down';
       case 'ArrowLeft':  case 'a': case 'A': return 'left';
       case 'ArrowRight': case 'd': case 'D': return 'right';
+      case 'ArrowUp': case 'w': case 'W':
+      case ' ': case 'Space':               return 'jump';
       default: return key;
     }
   }
 
-  // ── Position emit throttle ────────────────────────────────
-  let _lastEmitX = posX, _lastEmitY = posY;
-  setInterval(() => {
+  // ── Emit input to server when it changes ──────────────────────────────────
+  function emitIfChanged() {
+    if (iLeft === lastLeft && iRight === lastRight && iJump === lastJump) return;
     if (!window._socket || !window._localName) return;
-    if (posX === _lastEmitX && posY === _lastEmitY && lastDx === 0 && lastDy === 0) return;
-    _lastEmitX = posX;
-    _lastEmitY = posY;
-    window._socket.volatile.emit('player:move', {
-      x: posX, y: posY, dx: lastDx, dy: lastDy,
+    lastLeft  = iLeft;
+    lastRight = iRight;
+    lastJump  = iJump;
+    window._socket.volatile.emit('player:input', {
+      left:  iLeft,
+      right: iRight,
+      jump:  iJump,
     });
-  }, 50);
-
-  // ── Update — called each rAF tick ─────────────────────────
-  function update(dt) {
-    if (isMobile) {
-      return { x: posX, y: posY, dx: 0, dy: 0, walkFrame: false, facingLeft };
-    }
-
-    let dx = 0, dy = 0;
-    if (keysHeld.has('left'))  dx -= 1;
-    if (keysHeld.has('right')) dx += 1;
-    if (keysHeld.has('up'))    dy -= 1;
-    if (keysHeld.has('down'))  dy += 1;
-
-    isMoving = dx !== 0 || dy !== 0;
-
-    if (isMoving) {
-      const b = bounds();
-      posX = Math.max(b.minX, Math.min(b.maxX, posX + dx * SPEED));
-      posY = Math.max(b.minY, Math.min(b.maxY, posY + dy * SPEED));
-      lastDx = dx;
-      lastDy = dy;
-
-      // Walk animation
-      walkTimer = (walkTimer + dt) % WALK_CYCLE;
-
-      // Direction for sprite facing
-      if (dx < 0) facingLeft = true;
-      else if (dx > 0) facingLeft = false;
-    } else {
-      lastDx = 0;
-      lastDy = 0;
-      walkTimer = 0;
-    }
-
-    const walkFrame = isMoving && walkTimer < WALK_CYCLE / 2;
-
-    return { x: posX, y: posY, dx: lastDx, dy: lastDy, walkFrame, facingLeft };
   }
 
-  // Called by game.js once spawn position is received from server
+  // ── update(dt) — called each rAF tick ────────────────────────────────────
+  // Runs Physics.step for local player (prediction) and returns current state.
+  function update(dt) {
+    if (isMobile) {
+      return { x: posX, y: posY, vx: 0, vy: 0, facingLeft };
+    }
+
+    // Build a minimal single-player world step
+    const player = {
+      id:          'local',
+      x:           posX,
+      y:           posY,
+      vx,
+      vy,
+      prevY,
+      facingLeft,
+      stoodOn,
+      inputLeft:   iLeft,
+      inputRight:  iRight,
+      inputJump:   iJump,
+      jumpConsumed,
+    };
+
+    const result = Physics.step(World, { local: player }, { local: {
+      inputLeft:  iLeft,
+      inputRight: iRight,
+      inputJump:  iJump,
+    }}, dt);
+
+    const next   = result.local;
+    posX         = next.x;
+    posY         = next.y;
+    vx           = next.vx;
+    vy           = next.vy;
+    prevY        = player.y;
+    facingLeft   = next.facingLeft;
+    stoodOn      = next.stoodOn;
+    jumpConsumed = next.jumpConsumed;
+
+    return { x: posX, y: posY, vx, vy, facingLeft };
+  }
+
+  // ── setPosition — called by game.js when snap-correction occurs ───────────
   function setPosition(x, y) {
-    posX = x;
-    posY = y;
-    _lastEmitX = x;
-    _lastEmitY = y;
+    posX  = x;
+    posY  = y;
+    prevY = y;
+    vx    = 0;
+    vy    = 0;
+    stoodOn = 'ground';
   }
 
   return { update, setPosition };
