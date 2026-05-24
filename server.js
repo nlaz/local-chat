@@ -8,22 +8,22 @@ const path     = require('path');
 
 // ── Config ──────────────────────────────────────────────────
 const PORT        = process.env.PORT || 80;
-const CANVAS_W    = 800;
-const CANVAS_H    = 600;
+const WORLD_W     = 2400;  // logical world width
+const WORLD_H     = 1800;  // logical world height
 const WALL_INSET  = 16;
 const SPRITE_W    = 48;    // 16px × 3 scale
 const SPRITE_H    = 48;
-const SPAWN_PAD   = 100;   // px inset from walls for spawn zone
+const SPAWN_PAD   = 200;   // px inset from walls for spawn zone (centered cluster)
 const TICK_HZ     = 20;
 const TICK_MS     = 1000 / TICK_HZ;
 const MAX_CHAT    = 200;
 const MAX_NAME    = 20;
 
-// Spawn zone boundaries
-const SPAWN_MIN_X = WALL_INSET + SPAWN_PAD;
-const SPAWN_MAX_X = CANVAS_W - WALL_INSET - SPAWN_PAD - SPRITE_W;
-const SPAWN_MIN_Y = WALL_INSET + SPAWN_PAD;
-const SPAWN_MAX_Y = CANVAS_H - WALL_INSET - SPAWN_PAD - SPRITE_H;
+// Spawn zone — central area of the world so newcomers see other players
+const SPAWN_MIN_X = Math.round(WORLD_W / 2 - SPAWN_PAD);
+const SPAWN_MAX_X = Math.round(WORLD_W / 2 + SPAWN_PAD);
+const SPAWN_MIN_Y = Math.round(WORLD_H / 2 - SPAWN_PAD);
+const SPAWN_MAX_Y = Math.round(WORLD_H / 2 + SPAWN_PAD);
 
 // ── Express + Socket.IO setup ────────────────────────────────
 const app        = express();
@@ -100,9 +100,9 @@ io.on('connection', (socket) => {
     const p = players[socket.id];
     if (!p) return;   // not joined yet
 
-    // Clamp to room bounds (server-authoritative safety)
-    p.x  = Math.max(WALL_INSET, Math.min(CANVAS_W - WALL_INSET - SPRITE_W, Number(x) || p.x));
-    p.y  = Math.max(WALL_INSET, Math.min(CANVAS_H - WALL_INSET - SPRITE_H, Number(y) || p.y));
+    // Clamp to world bounds (server-authoritative safety)
+    p.x  = Math.max(WALL_INSET, Math.min(WORLD_W - WALL_INSET - SPRITE_W, Number(x) || p.x));
+    p.y  = Math.max(WALL_INSET, Math.min(WORLD_H - WALL_INSET - SPRITE_H, Number(y) || p.y));
     p.dx = Number(dx) || 0;
     p.dy = Number(dy) || 0;
   });

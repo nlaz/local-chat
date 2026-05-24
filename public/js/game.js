@@ -1,48 +1,80 @@
 // game.js — main game loop, state manager, Socket.IO client
 // Owns renderState (client-side lerp copy), drives rAF loop.
+// Canvas fills the viewport; renderer draws the world with a camera that follows the local player.
 
 (function () {
-  const CANVAS_W = 800;
-  const CANVAS_H = 600;
+  const WORLD_W     = 2400;
+  const WORLD_H     = 1800;
   const LERP_FACTOR = 0.2;
 
   // ── Canvas setup ──────────────────────────────────────────
   const canvas = document.getElementById('game-canvas');
   const ctx    = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled        = false;
-  ctx.webkitImageSmoothingEnabled  = false;
 
-  // ── CSS scaling — keeps 800×600 logical coords, fills viewport ──
-  function scaleCanvas() {
-    const S = Math.min(window.innerWidth / 800, window.innerHeight / 600);
-    canvas.style.transform = 'scale(' + S + ')';
-    window._canvasScale = S;
+  // Expose world dimensions for other modules (input.js, minimap.js, chat.js).
+  window._worldW = WORLD_W;
+  window._worldH = WORLD_H;
+  // Back-compat for any module still reading _canvasW/_canvasH — treat them as world dims now.
+  window._canvasW = WORLD_W;
+  window._canvasH = WORLD_H;
+
+  // ── Canvas sizing — fills the viewport in CSS pixels ──────
+  function resizeCanvas() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    // ImageSmoothing resets when the buffer is resized — reapply.
+    ctx.imageSmoothingEnabled       = false;
+    ctx.webkitImageSmoothingEnabled = false;
+    window._viewW = canvas.width;
+    window._viewH = canvas.height;
   }
+  resizeCanvas();
 
-  // Apply immediately so canvas is scaled when #game-screen becomes visible
-  scaleCanvas();
-
-  // Debounced resize listener
   let _resizeTimer = null;
   window.addEventListener('resize', function () {
     clearTimeout(_resizeTimer);
-    _resizeTimer = setTimeout(scaleCanvas, 100);
+    _resizeTimer = setTimeout(resizeCanvas, 100);
   });
+
+  // ── Camera (top-left of view in world coords) ─────────────
+  const camera = { x: 0, y: 0 };
+  window._camera = camera;
+
+  function updateCamera(target) {
+    const viewW = canvas.width;
+    const viewH = canvas.height;
+
+    if (target) {
+      camera.x = target.x + SPRITE_W / 2 - viewW / 2;
+      camera.y = target.y + SPRITE_H / 2 - viewH / 2;
+    }
+
+    // Clamp camera to world bounds. If the view is bigger than the world,
+    // center the world inside the view (negative camera offset).
+    if (viewW >= WORLD_W) {
+      camera.x = (WORLD_W - viewW) / 2;
+    } else {
+      camera.x = Math.max(0, Math.min(WORLD_W - viewW, camera.x));
+    }
+    if (viewH >= WORLD_H) {
+      camera.y = (WORLD_H - viewH) / 2;
+    } else {
+      camera.y = Math.max(0, Math.min(WORLD_H - viewH, camera.y));
+    }
+  }
 
   // ── State ─────────────────────────────────────────────────
   let localId     = null;
-  let serverState = {};   // latest snapshot from server
-  let renderState = {};   // interpolated copy used for drawing
+  let serverState = {};
+  let renderState = {};
 
   // ── Socket ────────────────────────────────────────────────
   const socket = io();
-  window._socket = socket;   // entry.js and chat.js read this
+  window._socket = socket;
 
-  // ── Socket events ─────────────────────────────────────────
   socket.on('game:init', (data) => {
     localId = data.selfId;
 
-    // Seed both states from server snapshot
     serverState = {};
     for (const id in data.players) {
       serverState[id] = Object.assign({}, data.players[id]);
@@ -52,15 +84,12 @@
       renderState[id] = Object.assign({ walkFrame: false, facingLeft: false }, serverState[id]);
     }
 
-    // Bootstrap local player position from server-assigned spawn
     if (renderState[localId]) {
       Input.setPosition(renderState[localId].x, renderState[localId].y);
+      updateCamera(renderState[localId]);
     }
 
-    // Wire up chat after we know our ID
     Chat.init(socket, localId, renderState);
-
-    // Initialise minimap canvas context
     Minimap.init();
   });
 
@@ -71,7 +100,6 @@
   });
 
   socket.on('game:state', (players) => {
-    // Merge server snapshot; preserve render-only fields
     for (const id in players) {
       if (!serverState[id]) {
         serverState[id] = players[id];
@@ -80,7 +108,6 @@
         Object.assign(serverState[id], players[id]);
       }
     }
-    // Remove players no longer in state
     for (const id in serverState) {
       if (!players[id]) {
         delete serverState[id];
@@ -99,7 +126,6 @@
     if (window._entryHandleJoinError) window._entryHandleJoinError(data);
   });
 
-  // Re-join after reconnect (transport re-established by Socket.IO)
   socket.on('connect', () => {
     if (window._reJoin) window._reJoin();
   });
@@ -120,7 +146,7 @@
     const dt = lastTime ? Math.min(ts - lastTime, 100) : 16;
     lastTime = ts;
 
-    // ── Update local player from Input ──────────────────────
+    // Update local player from Input
     if (localId && renderState[localId]) {
       const { x, y, dx, dy, walkFrame, facingLeft } = Input.update(dt);
       renderState[localId].x         = x;
@@ -131,7 +157,7 @@
       renderState[localId].facingLeft = facingLeft;
     }
 
-    // ── Lerp other players ──────────────────────────────────
+    // Lerp other players
     for (const id in renderState) {
       if (id === localId) continue;
       const rs = renderState[id];
@@ -142,7 +168,6 @@
       rs.dx = ss.dx;
       rs.dy = ss.dy;
 
-      // Walk animation for remote players based on dx/dy
       const moving = Math.abs(ss.dx) > 0.5 || Math.abs(ss.dy) > 0.5;
       if (moving) {
         rs._walkTimer = (rs._walkTimer || 0) + dt;
@@ -156,15 +181,17 @@
       else if (ss.dx > 0.5) rs.facingLeft = false;
     }
 
-    // ── Update bubble positions ──────────────────────────────
+    // Update camera to follow local player
+    if (localId && renderState[localId]) {
+      updateCamera(renderState[localId]);
+    } else {
+      updateCamera(null);
+    }
+
     Chat.updateBubbles(renderState);
 
-    // ── Draw ────────────────────────────────────────────────
-    Renderer.drawFrame(ctx, CANVAS_W, CANVAS_H, renderState, localId);
+    // Draw — renderer is camera-aware
+    Renderer.drawFrame(ctx, canvas.width, canvas.height, WORLD_W, WORLD_H, camera, renderState, localId);
     Minimap.draw(renderState, localId);
   }
-
-  // Expose canvas dimensions for bubble positioning and minimap
-  window._canvasW = CANVAS_W;
-  window._canvasH = CANVAS_H;
 }());
