@@ -179,8 +179,10 @@ test.describe('Movement', () => {
     await page.click('#game-canvas');
 
     const before = await page.evaluate(() => {
-      const rs = Object.values(window._renderStateExposed || {});
-      return rs[0] ? { x: rs[0].x } : null;
+      if (!window._socket || !window._renderStateExposed) return null;
+      const myId = window._socket.id;
+      const p = window._renderStateExposed[myId];
+      return p ? { x: p.x } : null;
     });
 
     // Hold right for 500ms to allow several physics frames
@@ -191,8 +193,10 @@ test.describe('Movement', () => {
     await page.waitForTimeout(100);  // one more rAF cycle
 
     const after = await page.evaluate(() => {
-      const rs = Object.values(window._renderStateExposed || {});
-      return rs[0] ? { x: rs[0].x } : null;
+      if (!window._socket || !window._renderStateExposed) return null;
+      const myId = window._socket.id;
+      const p = window._renderStateExposed[myId];
+      return p ? { x: p.x } : null;
     });
 
     if (before && after) {
