@@ -38,8 +38,9 @@ const Input = (function () {
   } else {
     // Register keyboard listeners only for desktop
     document.addEventListener('keydown', (e) => {
-      // Focus guard: ignore movement keys while chat input is focused
-      if (document.activeElement === document.getElementById('chat-input')) return;
+      // Focus guard: ignore movement keys while any text input is focused
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
 
       const key = e.key;
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
