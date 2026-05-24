@@ -122,6 +122,18 @@ local-chat/
 
 ---
 
+## Development
+
+Server-side tests use Node 20's built-in test runner (no dependencies):
+
+```bash
+npm test
+```
+
+UI and visual behavior is verified manually in-browser.
+
+---
+
 ## Capacity
 
 Designed for up to ~30 simultaneous visitors on a local network. Each `game:state` broadcast at 20 Hz is ~60 KB/s for 30 players — trivial on LAN.
