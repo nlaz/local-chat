@@ -1,0 +1,16 @@
+[Unit]
+Description=Local Chat Virtual Hangout Space
+After=network.target
+
+[Service]
+Type=simple
+User=beezoo
+WorkingDirectory=/home/beezoo/local-chat
+ExecStart=/home/beezoo/.nvm/versions/node/v20.20.2/bin/node server.js
+Restart=on-failure
+RestartSec=5s
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+Environment=PORT=80
+
+[Install]
+WantedBy=multi-user.target

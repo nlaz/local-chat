@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Chat</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- ── Entry screen ─────────────────────────────────────── -->
+  <div id="entry-screen">
+    <div class="entry-card">
+      <h1 class="entry-title">Local Chat</h1>
+      <p class="entry-sub">Pick a character and enter a name to join</p>
+
+      <div id="avatar-grid" class="avatar-grid">
+        <!-- 6 avatar cards injected by entry.js -->
+      </div>
+
+      <div class="name-row">
+        <input
+          id="name-input"
+          type="text"
+          maxlength="20"
+          placeholder="Your name…"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button id="enter-btn" disabled>Enter →</button>
+      </div>
+
+      <p id="entry-error" class="entry-error" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <!-- ── Game screen ──────────────────────────────────────── -->
+  <div id="game-screen" class="hidden">
+    <div class="game-layout">
+
+      <!-- Canvas + bubble overlay -->
+      <div class="canvas-wrapper">
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="bubble-layer"></div>
+
+        <!-- Mobile notice — shown only on touch devices -->
+        <div id="mobile-notice" class="mobile-notice hidden">
+          ⌨ Movement uses keyboard arrow keys or WASD — not available on mobile
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Chat overlay — fixed bottom-left, outside any transformed stacking context -->
+  <div class="chat-panel chat-overlay">
+    <div id="chat-log" class="chat-log"></div>
+    <div class="chat-input-row">
+      <input
+        id="chat-input"
+        type="text"
+        maxlength="200"
+        placeholder="Say something…"
+        autocomplete="off"
+      >
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <!-- Minimap overlay — fixed top-right, outside any transformed stacking context -->
+  <canvas id="minimap-canvas" width="200" height="150"></canvas>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/characters.js"></script>
+  <script src="/js/entry.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/renderer.js"></script>
+  <script src="/js/input.js"></script>
+  <script src="/js/minimap.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>
