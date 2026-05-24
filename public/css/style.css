@@ -342,30 +342,31 @@ html, body {
   overflow: hidden;
 }
 
-/* Color-block header for chat panel */
+/* Color-block header for chat panel — paper-toned, restrained */
 .chat-header {
-  background: var(--blue);
-  color: var(--paper);
+  background: var(--paper);
+  color: var(--ink);
   font-family: Georgia, serif;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: bold;
-  letter-spacing: 2.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
   padding: 5px 12px;
-  border-bottom: 2.5px solid var(--ink);
+  border-bottom: 1.5px solid rgba(13, 27, 42, 0.18);
   display: flex;
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
-/* Small colored dot accent in chat header */
+/* Small dot accent — muted ink */
 .chat-header-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--yellow);
+  width: 6px;
+  height: 6px;
+  background: var(--ink);
   border-radius: 50%;
-  border: 1.5px solid var(--ink);
+  opacity: 0.4;
   flex-shrink: 0;
 }
 
@@ -386,7 +387,7 @@ html, body {
 
 .chat-log .msg-name {
   font-weight: bold;
-  color: var(--red);
+  color: var(--ink);
 }
 
 .chat-input-row {
@@ -411,11 +412,12 @@ html, body {
 }
 
 #chat-input:focus {
-  border-color: var(--red);
+  border-color: var(--ink-mid);
+  box-shadow: 0 0 0 2px rgba(58, 58, 58, 0.12);
 }
 
 #send-btn {
-  background: var(--red);
+  background: var(--ink);
   border: 2px solid var(--ink);
   border-radius: 20px;
   color: var(--paper);
@@ -425,13 +427,13 @@ html, body {
   padding: 6px 12px;
   white-space: nowrap;
   transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: 2px 2px 0 rgba(13, 27, 42, 0.3);
 }
 
 #send-btn:hover {
-  background: var(--orange);
+  background: #1e3145;
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 3px 3px 0 rgba(13, 27, 42, 0.3);
 }
 
 /* ── Minimap overlay — fixed top-right ────────────────────────── */

@@ -11,9 +11,9 @@ const Renderer = (function () {
   // ── Palette ──────────────────────────────────────────────────────────────
   const PAPER           = '#f5efe0';
   const INK             = '#0d1b2a';
-  const GROUND_COLOR    = '#2a9d3f';
-  const GROUND_DARK     = '#1d7a30';   // grass clump dark shade
-  const GROUND_LIGHT    = '#34b850';   // grass clump light shade
+  const GROUND_COLOR    = '#5a8c66';   // muted sage green
+  const GROUND_DARK     = '#3e6649';   // muted grass clump dark shade
+  const GROUND_LIGHT    = '#6fa87a';   // muted grass clump light shade
   const PLATFORM_COLORS = ['#e63946', '#1d4e89', '#f4d35e', '#e07b29', '#2a9d3f'];
 
   // ── Label style ──────────────────────────────────────────────────────────
@@ -38,41 +38,36 @@ const Renderer = (function () {
     delete blobCache[id];
   }
 
-  // ── Decorations — Matisse garden, 21 shapes across the full 1600px world ──
-  //   type: 'leaf' | 'rect' | 'snail' | 'flower'
-  //   opacity: 0–1 (default 0.72)
-  //   rot: radians (leaf/rect)
+  // ── Decorations — ground-level flora only, anchored at GROUND_Y (820) ──
+  //   Leaves: y + h ≈ 820 (they grow up from the earth)
+  //   Flowers/snails: y ≈ 820 − r (center sits just above the ground line)
+  //   Opacity kept low so the sky stays clean for the characters to play in.
+  //   type: 'leaf' | 'snail' | 'flower'
   const DECORATIONS = [
-    // ── Far-left (0–350) ──────────────────────────────────────────────────
-    { type: 'rect',   x: 55,   y: 230, w: 52,  h: 95,  r: 16, color: '#f4d35e', rot:  0.12, opacity: 0.65 },
-    { type: 'leaf',   x: 80,   y: 640, w: 65,  h: 108, color: '#2a9d3f', rot: -0.30, opacity: 0.78 },
-    { type: 'snail',  x: 280,  y: 775, r: 26,  color: '#e63946', opacity: 0.78 },
-    { type: 'rect',   x: 195,  y: 455, w: 38,  h: 72,  r: 13, color: '#1d4e89', rot:  0.18, opacity: 0.62 },
+    // ── Far-left (0–350) ─────────────────────────────────────────────────
+    { type: 'leaf',   x:  45, y: 710, w: 26, h: 110, color: '#2a9d3f', rot: -0.16, opacity: 0.38 },
+    { type: 'flower', x: 150, y: 804, r: 16, color: '#e63946', center: '#f4d35e', petals: 5, opacity: 0.42 },
+    { type: 'snail',  x: 275, y: 800, r: 18, color: '#1d4e89', opacity: 0.34 },
 
-    // ── Left-center (350–650) ─────────────────────────────────────────────
-    { type: 'leaf',   x: 425,  y: 520, w: 48,  h: 118, color: '#e07b29', rot: -0.48, opacity: 0.72 },
-    { type: 'flower', x: 490,  y: 800, r: 22,  color: '#e63946', center: '#f4d35e', petals: 5, opacity: 0.82 },
-    { type: 'snail',  x: 570,  y: 796, r: 16,  color: '#1d4e89', opacity: 0.72 },
-    { type: 'rect',   x: 590,  y: 135, w: 55,  h: 92,  r: 18, color: '#e63946', rot: -0.06, opacity: 0.58 },
+    // ── Left-center (350–650) ────────────────────────────────────────────
+    { type: 'leaf',   x: 370, y: 715, w: 22, h: 105, color: '#e07b29', rot:  0.20, opacity: 0.32 },
+    { type: 'flower', x: 490, y: 806, r: 13, color: '#f4d35e', center: '#e07b29', petals: 6, opacity: 0.40 },
+    { type: 'snail',  x: 615, y: 804, r: 14, color: '#e63946', opacity: 0.30 },
 
-    // ── Center (650–1000) ─────────────────────────────────────────────────
-    { type: 'leaf',   x: 685,  y: 280, w: 42,  h: 80,  color: '#1d4e89', rot:  0.10, opacity: 0.70 },
-    { type: 'leaf',   x: 735,  y: 680, w: 40,  h: 74,  color: '#f4d35e', rot:  0.28, opacity: 0.70 },
-    { type: 'flower', x: 855,  y: 800, r: 19,  color: '#f4d35e', center: '#e07b29', petals: 6, opacity: 0.80 },
-    { type: 'rect',   x: 910,  y: 350, w: 36,  h: 62,  r: 10, color: '#2a9d3f', rot: -0.22, opacity: 0.60 },
+    // ── Center (650–1000) ────────────────────────────────────────────────
+    { type: 'leaf',   x: 660, y: 718, w: 24, h: 102, color: '#1d4e89', rot: -0.10, opacity: 0.28 },
+    { type: 'flower', x: 800, y: 805, r: 15, color: '#2a9d3f', center: '#1d4e89', petals: 5, opacity: 0.38 },
+    { type: 'snail',  x: 930, y: 800, r: 19, color: '#f4d35e', opacity: 0.33 },
 
-    // ── Right-center (1000–1300) ──────────────────────────────────────────
-    { type: 'leaf',   x: 980,  y: 575, w: 58,  h: 108, color: '#e63946', rot:  0.38, opacity: 0.74 },
-    { type: 'snail',  x: 1100, y: 786, r: 24,  color: '#f4d35e', opacity: 0.76 },
-    { type: 'rect',   x: 1120, y: 215, w: 48,  h: 90,  r: 16, color: '#1d4e89', rot:  0.08, opacity: 0.60 },
-    { type: 'leaf',   x: 1195, y: 435, w: 44,  h: 84,  color: '#2a9d3f', rot: -0.32, opacity: 0.72 },
+    // ── Right-center (1000–1300) ─────────────────────────────────────────
+    { type: 'leaf',   x: 1000, y: 712, w: 28, h: 108, color: '#e63946', rot:  0.14, opacity: 0.34 },
+    { type: 'flower', x: 1130, y: 805, r: 14, color: '#e07b29', center: '#f4d35e', petals: 6, opacity: 0.38 },
+    { type: 'snail',  x: 1265, y: 802, r: 16, color: '#2a9d3f', opacity: 0.28 },
 
-    // ── Far-right (1300–1600) ─────────────────────────────────────────────
-    { type: 'flower', x: 1295, y: 800, r: 20,  color: '#2a9d3f', center: '#1d4e89', petals: 5, opacity: 0.80 },
-    { type: 'snail',  x: 1385, y: 764, r: 22,  color: '#f4d35e', opacity: 0.74 },
-    { type: 'rect',   x: 1388, y: 275, w: 72,  h: 124, r: 18, color: '#e07b29', rot: -0.05, opacity: 0.64 },
-    { type: 'leaf',   x: 1472, y: 575, w: 52,  h: 98,  color: '#2a9d3f', rot:  0.42, opacity: 0.74 },
-    { type: 'leaf',   x: 1542, y: 365, w: 46,  h: 86,  color: '#e63946', rot: -0.18, opacity: 0.66 },
+    // ── Far-right (1300–1600) ────────────────────────────────────────────
+    { type: 'leaf',   x: 1320, y: 716, w: 26, h: 104, color: '#f4d35e', rot: -0.18, opacity: 0.30 },
+    { type: 'flower', x: 1440, y: 806, r: 17, color: '#1d4e89', center: '#e63946', petals: 5, opacity: 0.36 },
+    { type: 'leaf',   x: 1545, y: 718, w: 20, h: 102, color: '#2a9d3f', rot:  0.12, opacity: 0.26 },
   ];
 
   function drawDecorations(ctx) {
@@ -145,19 +140,17 @@ const Renderer = (function () {
     ctx.lineTo(World.WORLD_W, World.GROUND_Y);
     ctx.stroke();
 
-    // Grass clumps — small oval tufts along the ground line
-    const clumpX = [75, 195, 340, 465, 615, 755, 900, 1040, 1185, 1320, 1455, 1565];
+    // Grass clumps — small oval tufts along the ground line (muted, subtle)
+    const clumpX = [110, 290, 490, 690, 890, 1090, 1290, 1490];
     clumpX.forEach(gx => {
-      ctx.globalAlpha = 0.68;
-      // Main clump (dark)
+      ctx.globalAlpha = 0.40;
       ctx.fillStyle = GROUND_DARK;
       ctx.beginPath();
-      ctx.ellipse(gx, World.GROUND_Y - 8, 22, 11, Math.sin(gx * 0.05) * 0.15, 0, Math.PI * 2);
+      ctx.ellipse(gx, World.GROUND_Y - 7, 20, 10, Math.sin(gx * 0.05) * 0.12, 0, Math.PI * 2);
       ctx.fill();
-      // Secondary highlight clump (light)
       ctx.fillStyle = GROUND_LIGHT;
       ctx.beginPath();
-      ctx.ellipse(gx + 16, World.GROUND_Y - 5, 14, 7, -Math.sin(gx * 0.05) * 0.1, 0, Math.PI * 2);
+      ctx.ellipse(gx + 14, World.GROUND_Y - 4, 13, 6, -Math.sin(gx * 0.05) * 0.08, 0, Math.PI * 2);
       ctx.fill();
     });
     ctx.globalAlpha = 1;

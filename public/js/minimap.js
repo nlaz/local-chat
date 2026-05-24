@@ -18,7 +18,7 @@ const Minimap = (function () {
   const PAPER     = '#f5efe0';
   const INK       = '#0d1b2a';
   const CAM_COLOR = 'rgba(13, 27, 42, 0.15)';
-  const GROUND_COLOR = '#2a9d3f';
+  const GROUND_COLOR = '#5a8c66';   // matches renderer muted sage ground
 
   let _ctx    = null;
   let _scaleX = SCALE_X;
