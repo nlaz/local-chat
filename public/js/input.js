@@ -73,7 +73,7 @@ const Input = (function () {
     lastLeft  = iLeft;
     lastRight = iRight;
     lastJump  = iJump;
-    window._socket.volatile.emit('player:input', {
+    window._socket.emit('player:input', {
       left:  iLeft,
       right: iRight,
       jump:  iJump,
@@ -123,13 +123,14 @@ const Input = (function () {
   }
 
   // ── setPosition — called by game.js when snap-correction occurs ───────────
-  function setPosition(x, y) {
-    posX  = x;
-    posY  = y;
-    prevY = y;
-    vx    = 0;
-    vy    = 0;
-    stoodOn = 'ground';
+  // Accepts server velocity and stoodOn so a snap doesn't destroy a jump in flight.
+  function setPosition(x, y, newVy, newStoodOn) {
+    posX    = x;
+    posY    = y;
+    prevY   = y;
+    vx      = 0;
+    vy      = (newVy      !== undefined) ? newVy      : 0;
+    stoodOn = (newStoodOn !== undefined) ? newStoodOn : 'ground';
   }
 
   return { update, setPosition };

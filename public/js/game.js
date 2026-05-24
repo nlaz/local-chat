@@ -7,7 +7,7 @@
 (function () {
   const LERP_FACTOR    = 0.18;
   const CAM_LERP       = 0.12;   // camera smoothing
-  const SNAP_THRESHOLD = 80;     // world units — snap-correct if prediction drifts this far
+  const SNAP_THRESHOLD = 250;    // world units — snap-correct if prediction drifts this far
 
   // ── Canvas setup (full-screen, resizes with window) ──────────────────────
   const canvas = document.getElementById('game-canvas');
@@ -96,7 +96,8 @@
           if (Math.sqrt(dx * dx + dy * dy) > SNAP_THRESHOLD) {
             renderState[id].x = srv.x;
             renderState[id].y = srv.y;
-            Input.setPosition(srv.x, srv.y);
+            // Pass server velocity + stoodOn so a snap never cancels a jump in flight
+            Input.setPosition(srv.x, srv.y, srv.vy, srv.stoodOn);
           }
         }
         Object.assign(serverState[id], players[id]);
