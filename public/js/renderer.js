@@ -15,8 +15,11 @@ const Renderer = (function () {
   const PLATFORM_COLORS = ['#e63946', '#1d4e89', '#f4d35e', '#e07b29', '#2a9d3f'];
 
   // ── Label style ──────────────────────────────────────────────────────────
-  const LABEL_FONT  = 'bold 13px Georgia, serif';
-  const LABEL_COLOR = INK;
+  const LABEL_FONT    = 'bold 12px Georgia, serif';
+  const LABEL_COLOR   = INK;
+  const PILL_PAD_H    = 7;    // horizontal padding inside pill
+  const PILL_PAD_V    = 3;    // vertical padding inside pill
+  const PILL_H        = 18;   // pill height
 
   // Per-session blob cache: { [id]: { canvas, canvasFlipped, color, headTop } }
   const blobCache = {};
@@ -158,7 +161,7 @@ const Renderer = (function () {
       ctx.drawImage(bCanvas, Math.round(p.x), Math.round(p.y), bw, bh);
     }
 
-    // ── Name labels (drawn after blobs, on top) ───────────────────────────
+    // ── Name labels — colored pill badges above each blob ────────────────
     ctx.font      = LABEL_FONT;
     ctx.textAlign = 'center';
     for (const id in renderState) {
@@ -166,16 +169,29 @@ const Renderer = (function () {
       const blob = blobCache[id];
       if (!blob) continue;
 
-      const bw    = BlobGen.LOGICAL_W;
-      const labelX = Math.round(p.x + bw / 2);
-      const labelY = Math.round(p.y) - 6;
+      const bw      = BlobGen.LOGICAL_W;
+      const centerX = Math.round(p.x + bw / 2);
+      const textW   = ctx.measureText(p.name).width;
+      const pillW   = Math.ceil(textW + PILL_PAD_H * 2);
+      const pillX   = centerX - pillW / 2;
+      const pillY   = Math.round(p.y) - PILL_H - 4;  // 4px gap above blob top
 
-      // Shadow
-      ctx.fillStyle = 'rgba(245,239,224,0.7)';
-      ctx.fillText(p.name, labelX + 1, labelY + 1);
-      // Text
-      ctx.fillStyle = LABEL_COLOR;
-      ctx.fillText(p.name, labelX, labelY);
+      // Pill background in the blob's primary color
+      ctx.beginPath();
+      ctx.roundRect(pillX, pillY, pillW, PILL_H, PILL_H / 2);
+      ctx.fillStyle = blob.color || PAPER;
+      ctx.globalAlpha = 0.92;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Pill border
+      ctx.lineWidth   = 1.8;
+      ctx.strokeStyle = INK;
+      ctx.stroke();
+
+      // Name text
+      ctx.fillStyle = INK;
+      ctx.fillText(p.name, centerX, pillY + PILL_H - PILL_PAD_V - 1);
     }
 
     // ── Reset transform ───────────────────────────────────────────────────

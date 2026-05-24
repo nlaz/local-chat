@@ -4,15 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Local Chat</title>
+  <!-- Fraunces display serif — loads async, Georgia fallback if no internet -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,400&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
   <!-- ── Entry screen ─────────────────────────────────────── -->
   <div id="entry-screen">
+
+    <!-- Matisse cutout shapes scattered in the background -->
+    <div class="entry-shapes" aria-hidden="true">
+      <span class="es es-1"></span>
+      <span class="es es-2"></span>
+      <span class="es es-3"></span>
+      <span class="es es-4"></span>
+      <span class="es es-5"></span>
+      <span class="es es-6"></span>
+    </div>
+
     <div class="entry-card">
+      <div class="entry-color-bar"></div>
+
       <h1 class="entry-title">Local Chat</h1>
-      <p class="entry-sub">Enter your name to join the space</p>
+      <p class="entry-sub">what's your name?</p>
 
       <div class="name-row">
         <input
@@ -48,8 +65,12 @@
     </div>
   </div>
 
-  <!-- Chat overlay — fixed bottom-left -->
-  <div class="chat-panel chat-overlay">
+  <!-- Chat overlay — fixed bottom-left; hidden until game starts -->
+  <div class="chat-panel chat-overlay hidden">
+    <div class="chat-header">
+      <span class="chat-header-dot"></span>
+      chat
+    </div>
     <div id="chat-log" class="chat-log"></div>
     <div class="chat-input-row">
       <input
@@ -63,8 +84,8 @@
     </div>
   </div>
 
-  <!-- Minimap overlay — fixed top-right -->
-  <canvas id="minimap-canvas" width="240" height="135"></canvas>
+  <!-- Minimap overlay — fixed top-right; hidden until game starts -->
+  <canvas id="minimap-canvas" class="hidden" width="240" height="135"></canvas>
 
   <!-- Scripts — world and physics loaded first (shared constants) -->
   <script src="/socket.io/socket.io.js"></script>

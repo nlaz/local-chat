@@ -8,7 +8,8 @@
   --orange:  #e07b29;
   --ink:     #0d1b2a;
   --ink-mid: #3a3a3a;
-  --off-white-panel: rgba(245, 239, 224, 0.95);
+  --off-white-panel: rgba(245, 239, 224, 0.97);
+  --display-font: 'Fraunces', Georgia, 'Times New Roman', serif;
 }
 
 /* ── Reset & base ─────────────────────────────────────────────── */
@@ -36,27 +37,135 @@ html, body {
   justify-content: center;
   padding: 1rem;
   background: var(--paper);
+  position: relative;
+  overflow: hidden;
 }
 
+/* ── Matisse background shapes ────────────────────────────────── */
+/* Floating paper cutouts scattered around the entry screen */
+.entry-shapes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.es {
+  position: absolute;
+  display: block;
+}
+
+/* Top-left: tall blue rounded form */
+.es-1 {
+  width: 110px; height: 220px;
+  background: var(--blue);
+  border-radius: 55px 70px 50px 60px / 90px 60px 80px 50px;
+  top: -40px; left: -25px;
+  opacity: 0.82;
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+/* Top-right: orange oval */
+.es-2 {
+  width: 90px; height: 150px;
+  background: var(--orange);
+  border-radius: 50% 60% 40% 55% / 60% 45% 55% 40%;
+  top: 2%; right: 6%;
+  opacity: 0.78;
+  animation: float-slow 9s ease-in-out infinite reverse;
+  animation-delay: -3s;
+}
+
+/* Left-center: large green leaf */
+.es-3 {
+  width: 75px; height: 155px;
+  background: var(--green);
+  border-radius: 50% 50% 50% 50% / 65% 65% 35% 35%;
+  top: 38%; left: 2%;
+  transform: rotate(-22deg);
+  opacity: 0.8;
+  animation: float-leaf 11s ease-in-out infinite;
+  animation-delay: -5s;
+}
+
+/* Bottom-right: red organic rectangle */
+.es-4 {
+  width: 130px; height: 90px;
+  background: var(--red);
+  border-radius: 40px 55px 35px 50px / 45px 35px 55px 40px;
+  bottom: 6%; right: 2%;
+  opacity: 0.80;
+  animation: float-slow 8s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+/* Bottom-left: yellow pill */
+.es-5 {
+  width: 140px; height: 55px;
+  background: var(--yellow);
+  border-radius: 28px 35px 25px 32px / 28px 25px 35px 28px;
+  bottom: 2%; left: 8%;
+  transform: rotate(-4deg);
+  opacity: 0.85;
+  animation: float-slow 10s ease-in-out infinite reverse;
+  animation-delay: -7s;
+}
+
+/* Right-middle: small green oval accent */
+.es-6 {
+  width: 55px; height: 95px;
+  background: var(--green);
+  border-radius: 50%;
+  top: 52%; right: 3%;
+  opacity: 0.65;
+  animation: float-leaf 13s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes float-leaf {
+  0%, 100% { transform: rotate(-22deg) translateY(0px); }
+  50%       { transform: rotate(-19deg) translateY(-10px); }
+}
+
+/* ── Entry card ────────────────────────────────────────────────── */
 .entry-card {
   background: var(--paper);
   border: 3px solid var(--ink);
-  border-radius: 40% 30% 50% 20% / 30% 50% 20% 40%;  /* organic blob border */
-  padding: 2.5rem 2rem;
+  border-radius: 40% 30% 50% 20% / 30% 50% 20% 40%;
+  padding: 0 2.2rem 2.5rem;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  box-shadow: 6px 6px 0 var(--ink);
+  gap: 1.4rem;
+  box-shadow: 8px 8px 0 var(--ink);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Color-block header bar — Matisse flat color stripe */
+.entry-color-bar {
+  background: var(--red);
+  height: 22px;
+  margin: 0 -2.2rem 0.8rem;
+  border-bottom: 3px solid var(--ink);
+  flex-shrink: 0;
 }
 
 .entry-title {
-  font-size: 2.4rem;
+  font-family: var(--display-font);
+  font-size: 2.8rem;
+  font-weight: 700;
   color: var(--ink);
   text-align: center;
-  letter-spacing: 1px;
-  font-weight: normal;
+  letter-spacing: -0.5px;
+  line-height: 1;
 }
 
 .entry-sub {
@@ -64,6 +173,7 @@ html, body {
   color: var(--ink-mid);
   font-size: 0.95rem;
   font-style: italic;
+  margin-top: -0.5rem;
 }
 
 /* ── Name input ───────────────────────────────────────────────── */
@@ -99,7 +209,7 @@ html, body {
   font-family: inherit;
   font-size: 1rem;
   padding: 10px 18px;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
   white-space: nowrap;
   box-shadow: 3px 3px 0 var(--ink);
 }
@@ -121,6 +231,7 @@ html, body {
   font-size: 0.85rem;
   min-height: 1.2em;
   text-align: center;
+  margin-top: -0.5rem;
 }
 
 /* ── Game screen ──────────────────────────────────────────────── */
@@ -145,7 +256,6 @@ html, body {
 
 #game-canvas {
   display: block;
-  /* No image-rendering: pixelated — blobs are bezier, not pixel art */
 }
 
 /* Bubble overlay — sits over the canvas */
@@ -165,25 +275,24 @@ html, body {
   background: var(--paper);
   color: var(--ink);
   border: 2.5px solid var(--ink);
-  /* Organic, hand-cut bubble shape */
   border-radius: 60% 40% 50% 30% / 40% 60% 30% 50%;
-  padding: 6px 12px;
+  padding: 6px 13px;
   font-family: Georgia, serif;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   line-height: 1.4;
-  max-width: 180px;
+  max-width: 190px;
   word-break: break-word;
   transform: translateX(-50%);
   pointer-events: none;
   box-shadow: 3px 3px 0 var(--ink);
-  animation: bubble-in 0.12s ease-out;
+  animation: bubble-in 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Tail: small filled circle below bubble */
+/* Tail: small filled dot below bubble */
 .speech-bubble::after {
   content: '';
   position: absolute;
-  bottom: -10px;
+  bottom: -11px;
   left: 50%;
   transform: translateX(-50%);
   width: 10px;
@@ -194,7 +303,7 @@ html, body {
 }
 
 @keyframes bubble-in {
-  from { opacity: 0; transform: translateX(-50%) scale(0.85); }
+  from { opacity: 0; transform: translateX(-50%) scale(0.7); }
   to   { opacity: 1; transform: translateX(-50%) scale(1); }
 }
 
@@ -220,16 +329,44 @@ html, body {
   bottom: 0;
   left: 0;
   width: 300px;
-  max-height: 32vh;
+  max-height: 34vh;
   display: flex;
   flex-direction: column;
   background: var(--off-white-panel);
   border: 2.5px solid var(--ink);
   border-bottom: none;
-  border-radius: 0 20px 0 0;
+  border-radius: 0 22px 0 0;
   z-index: 100;
   pointer-events: auto;
-  box-shadow: 3px -3px 0 var(--ink);
+  box-shadow: 4px -4px 0 var(--ink);
+  overflow: hidden;
+}
+
+/* Color-block header for chat panel */
+.chat-header {
+  background: var(--blue);
+  color: var(--paper);
+  font-family: Georgia, serif;
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-bottom: 2.5px solid var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+/* Small colored dot accent in chat header */
+.chat-header-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--yellow);
+  border-radius: 50%;
+  border: 1.5px solid var(--ink);
+  flex-shrink: 0;
 }
 
 .chat-log {
@@ -249,7 +386,7 @@ html, body {
 
 .chat-log .msg-name {
   font-weight: bold;
-  color: var(--blue);
+  color: var(--red);
 }
 
 .chat-input-row {
@@ -257,6 +394,7 @@ html, body {
   gap: 6px;
   padding: 8px;
   border-top: 2px solid var(--ink);
+  flex-shrink: 0;
 }
 
 #chat-input {
@@ -273,11 +411,11 @@ html, body {
 }
 
 #chat-input:focus {
-  border-color: var(--blue);
+  border-color: var(--red);
 }
 
 #send-btn {
-  background: var(--blue);
+  background: var(--red);
   border: 2px solid var(--ink);
   border-radius: 20px;
   color: var(--paper);
@@ -286,17 +424,17 @@ html, body {
   font-size: 0.8rem;
   padding: 6px 12px;
   white-space: nowrap;
-  transition: background 0.15s, transform 0.1s;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
   box-shadow: 2px 2px 0 var(--ink);
 }
 
 #send-btn:hover {
-  background: var(--red);
+  background: var(--orange);
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 var(--ink);
 }
 
-/* ── Minimap overlay — fixed top-right, Matisse style ─────────── */
+/* ── Minimap overlay — fixed top-right ────────────────────────── */
 #minimap-canvas {
   position: fixed;
   top: 14px;
@@ -305,9 +443,29 @@ html, body {
   height: 135px;
   border: 2.5px solid var(--ink);
   background: var(--off-white-panel);
-  border-radius: 12px;
+  border-radius: 14px;
   z-index: 100;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+/* Minimap slide-in on game start */
+#minimap-canvas:not(.hidden) {
+  animation: slide-in-top 0.25s ease-out;
+}
+
+/* Chat slide-in on game start */
+.chat-overlay:not(.hidden) {
+  animation: slide-in-bottom 0.25s ease-out;
+}
+
+@keyframes slide-in-top {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-bottom {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ── Scrollbar style ──────────────────────────────────────────── */

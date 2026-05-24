@@ -17,7 +17,7 @@ const Minimap = (function () {
 
   const PAPER     = '#f5efe0';
   const INK       = '#0d1b2a';
-  const CAM_COLOR = 'rgba(13, 27, 42, 0.25)';
+  const CAM_COLOR = 'rgba(13, 27, 42, 0.15)';
   const GROUND_COLOR = '#2a9d3f';
 
   let _ctx    = null;
@@ -50,18 +50,33 @@ const Minimap = (function () {
     _ctx.fillStyle = GROUND_COLOR;
     _ctx.fillRect(0, groundMapY, MAP_W, MAP_H - groundMapY);
 
-    // Camera viewport rect — visible world width is dynamic (height-based scale)
+    // Camera viewport rect — only draw when player can't see the full world
     if (cameraX !== undefined) {
-      const scale   = (window.innerHeight || 900) / (World.WORLD_H || 900);
+      const scale    = (window.innerHeight || 900) / (World.WORLD_H || 900);
       const visibleW = (window.innerWidth  || 800) / scale;
-      const vwMap   = Math.min(visibleW, World.WORLD_W) * _scaleX;
-      const camMapX = cameraX * _scaleX;
-      _ctx.fillStyle = CAM_COLOR;
-      _ctx.fillRect(camMapX, 0, vwMap, MAP_H);
-      _ctx.strokeStyle = INK;
-      _ctx.lineWidth   = 1;
-      _ctx.strokeRect(camMapX, 0, vwMap, MAP_H);
+      if (visibleW < (World.WORLD_W || 1600)) {
+        const vwMap   = visibleW * _scaleX;
+        const camMapX = cameraX * _scaleX;
+        _ctx.fillStyle = CAM_COLOR;
+        _ctx.fillRect(camMapX, 0, vwMap, MAP_H);
+        _ctx.strokeStyle = INK;
+        _ctx.lineWidth   = 1;
+        _ctx.strokeRect(camMapX, 0, vwMap, MAP_H);
+      }
     }
+
+    // Platform lines
+    const platColors = ['#e63946', '#1d4e89', '#f4d35e', '#e07b29', '#2a9d3f'];
+    (World.PLATFORMS || []).forEach((plat, i) => {
+      const px = plat.x * _scaleX;
+      const py = plat.y * _scaleY;
+      const pw = plat.w * _scaleX;
+      _ctx.fillStyle = platColors[i % platColors.length];
+      _ctx.fillRect(px, py, pw, 2.5);
+      _ctx.strokeStyle = INK;
+      _ctx.lineWidth = 0.5;
+      _ctx.strokeRect(px, py, pw, 2.5);
+    });
 
     // Player dots
     for (const id in renderState) {
