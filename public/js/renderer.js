@@ -38,37 +38,7 @@ const Renderer = (function () {
     delete blobCache[id];
   }
 
-  // ── Decorations — ground-level flora only, anchored at GROUND_Y (820) ──
-  //   Leaves: y + h ≈ 820 (they grow up from the earth)
-  //   Flowers/snails: y ≈ 820 − r (center sits just above the ground line)
-  //   Opacity kept low so the sky stays clean for the characters to play in.
-  //   type: 'leaf' | 'snail' | 'flower'
-  const DECORATIONS = [
-    // ── Far-left (0–350) ─────────────────────────────────────────────────
-    { type: 'leaf',   x:  45, y: 710, w: 26, h: 110, color: '#2a9d3f', rot: -0.16, opacity: 0.38 },
-    { type: 'flower', x: 150, y: 804, r: 16, color: '#e63946', center: '#f4d35e', petals: 5, opacity: 0.42 },
-    { type: 'snail',  x: 275, y: 800, r: 18, color: '#1d4e89', opacity: 0.34 },
-
-    // ── Left-center (350–650) ────────────────────────────────────────────
-    { type: 'leaf',   x: 370, y: 715, w: 22, h: 105, color: '#e07b29', rot:  0.20, opacity: 0.32 },
-    { type: 'flower', x: 490, y: 806, r: 13, color: '#f4d35e', center: '#e07b29', petals: 6, opacity: 0.40 },
-    { type: 'snail',  x: 615, y: 804, r: 14, color: '#e63946', opacity: 0.30 },
-
-    // ── Center (650–1000) ────────────────────────────────────────────────
-    { type: 'leaf',   x: 660, y: 718, w: 24, h: 102, color: '#1d4e89', rot: -0.10, opacity: 0.28 },
-    { type: 'flower', x: 800, y: 805, r: 15, color: '#2a9d3f', center: '#1d4e89', petals: 5, opacity: 0.38 },
-    { type: 'snail',  x: 930, y: 800, r: 19, color: '#f4d35e', opacity: 0.33 },
-
-    // ── Right-center (1000–1300) ─────────────────────────────────────────
-    { type: 'leaf',   x: 1000, y: 712, w: 28, h: 108, color: '#e63946', rot:  0.14, opacity: 0.34 },
-    { type: 'flower', x: 1130, y: 805, r: 14, color: '#e07b29', center: '#f4d35e', petals: 6, opacity: 0.38 },
-    { type: 'snail',  x: 1265, y: 802, r: 16, color: '#2a9d3f', opacity: 0.28 },
-
-    // ── Far-right (1300–1600) ────────────────────────────────────────────
-    { type: 'leaf',   x: 1320, y: 716, w: 26, h: 104, color: '#f4d35e', rot: -0.18, opacity: 0.30 },
-    { type: 'flower', x: 1440, y: 806, r: 17, color: '#1d4e89', center: '#e63946', petals: 5, opacity: 0.36 },
-    { type: 'leaf',   x: 1545, y: 718, w: 20, h: 102, color: '#2a9d3f', rot:  0.12, opacity: 0.26 },
-  ];
+  const DECORATIONS = [];
 
   function drawDecorations(ctx) {
     DECORATIONS.forEach(d => {
