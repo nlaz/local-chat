@@ -2,7 +2,7 @@
 // Exports a single `Input` object consumed by game.js each rAF tick.
 
 const Input = (function () {
-  const SPEED      = 2;     // pixels per frame at 60fps
+  const SPEED      = 3;     // pixels per frame at 60fps
   const WALK_CYCLE = 400;   // ms for a full walk cycle
   const ROOM_INSET = 16;    // wall width — matches renderer wall thickness
 
@@ -16,15 +16,15 @@ const Input = (function () {
   let   walkTimer  = 0;
   let   isMoving   = false;
 
-  // Boundaries computed lazily from canvas size (set in game.js)
+  // Boundaries computed lazily from world size (set in game.js)
   function bounds() {
-    const cw = window._canvasW || 800;
-    const ch = window._canvasH || 600;
+    const ww = window._worldW || 1200;
+    const wh = window._worldH || 900;
     return {
       minX: ROOM_INSET,
       minY: ROOM_INSET,
-      maxX: cw - ROOM_INSET - SPRITE_W,
-      maxY: ch - ROOM_INSET - SPRITE_H,
+      maxX: ww - ROOM_INSET - SPRITE_W,
+      maxY: wh - ROOM_INSET - SPRITE_H,
     };
   }
 
@@ -38,8 +38,9 @@ const Input = (function () {
   } else {
     // Register keyboard listeners only for desktop
     document.addEventListener('keydown', (e) => {
-      // Focus guard: ignore movement keys while chat input is focused
-      if (document.activeElement === document.getElementById('chat-input')) return;
+      // Focus guard: ignore movement keys while any text input is focused
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
 
       const key = e.key;
       if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',

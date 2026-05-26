@@ -100,24 +100,24 @@ const Chat = (function () {
   }
 
   // ── Position a bubble above the player sprite ─────────────
+  // World coords → screen coords by subtracting the camera offset.
   // The bubble's CSS uses transform: translateX(-50%), so `left` is the
   // horizontal centre of the sprite.
   function positionBubble(div, x, y) {
     const canvasEl = document.getElementById('game-canvas');
     if (!canvasEl) return;
 
-    // Scale factor: use global (set by game.js scaleCanvas) with BCR fallback
-    const S = window._canvasScale || (canvasEl.getBoundingClientRect().width / 800);
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const layerRect  = document.getElementById('bubble-layer').getBoundingClientRect();
+    const offsetX    = canvasRect.left - layerRect.left;
+    const offsetY    = canvasRect.top  - layerRect.top;
 
-    // Offset of scaled canvas edge within the bubble-layer (handles pillarbox/letterbox)
-    const canvasRect  = canvasEl.getBoundingClientRect();
-    const layerRect   = document.getElementById('bubble-layer').getBoundingClientRect();
-    const offsetX     = canvasRect.left - layerRect.left;
-    const offsetY     = canvasRect.top  - layerRect.top;
+    const cam = window._camera || { x: 0, y: 0 };
+    const sx  = x - cam.x;
+    const sy  = y - cam.y;
 
-    // Convert logical canvas coords → CSS pixels within scaled canvas
-    div.style.left = (offsetX + x * S + (SPRITE_W / 2) * S) + 'px';
-    div.style.top  = (offsetY + y * S - 14 * S) + 'px';
+    div.style.left = (offsetX + sx + SPRITE_W / 2) + 'px';
+    div.style.top  = (offsetY + sy - 14) + 'px';
   }
 
   // ── Called each rAF by game.js to track moving players ────

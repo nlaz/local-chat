@@ -15,45 +15,31 @@
   const entryError  = document.getElementById('entry-error');
 
   // ── Build avatar grid ─────────────────────────────────────
-  // Each card renders the character's idle sprite via an offscreen canvas
-  // so no external image element is needed for the preview.
-  const sheet = new Image();
-  sheet.src = '/assets/characters.png';
+  // Each card renders the character's idle frame into a small inline canvas
+  // via the character's own draw() method — no sprite sheet asset required.
+  CHARACTERS.forEach((char, idx) => {
+    const card = document.createElement('div');
+    card.className = 'avatar-card';
+    card.dataset.idx = idx;
 
-  sheet.addEventListener('load', () => {
-    CHARACTERS.forEach((char, idx) => {
-      const card = document.createElement('div');
-      card.className = 'avatar-card';
-      card.dataset.idx = idx;
+    const preview = document.createElement('canvas');
+    preview.className = 'avatar-preview';
+    preview.width  = SPRITE_W;
+    preview.height = SPRITE_H;
+    const pctx = preview.getContext('2d');
+    pctx.imageSmoothingEnabled = false;
+    pctx.webkitImageSmoothingEnabled = false;
+    char.draw(pctx, 0, 0, false, false);
 
-      // Offscreen canvas → preview image
-      const offscreen = document.createElement('canvas');
-      offscreen.width  = char.frameW * SCALE;
-      offscreen.height = char.frameH * SCALE;
-      const octx = offscreen.getContext('2d');
-      octx.imageSmoothingEnabled = false;
-      octx.webkitImageSmoothingEnabled = false;
-      octx.drawImage(
-        sheet,
-        char.sheetX, char.sheetY, char.frameW, char.frameH,
-        0, 0, char.frameW * SCALE, char.frameH * SCALE
-      );
+    const label = document.createElement('span');
+    label.className = 'avatar-label';
+    label.textContent = char.label;
 
-      const img = document.createElement('img');
-      img.className = 'avatar-preview';
-      img.src = offscreen.toDataURL();
-      img.alt = char.label;
+    card.appendChild(preview);
+    card.appendChild(label);
+    card.addEventListener('click', () => selectAvatar(idx, card));
 
-      const label = document.createElement('span');
-      label.className = 'avatar-label';
-      label.textContent = char.label;
-
-      card.appendChild(img);
-      card.appendChild(label);
-      card.addEventListener('click', () => selectAvatar(idx, card));
-
-      avatarGrid.appendChild(card);
-    });
+    avatarGrid.appendChild(card);
   });
 
   function selectAvatar(idx, cardEl) {

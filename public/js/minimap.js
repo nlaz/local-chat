@@ -1,14 +1,16 @@
 // minimap.js — top-right overlay showing all player positions as dots
-// OSRS-style: gold dot for local player, cream dots for others.
+// Corporate palette: teal dot for local player, muted grey-blue for others.
 // Drawn every rAF tick by game.js.
 
 const Minimap = (function () {
   const MAP_W      = 200;
   const MAP_H      = 150;
-  const SCALE      = MAP_W / 800;   // 0.25 — matches 4:3 logical canvas
-  const DOT_RADIUS = 4;
+  const DOT_RADIUS = 3;
 
   let _ctx = null;
+
+  function scaleX() { return MAP_W / (window._worldW || 1200); }
+  function scaleY() { return MAP_H / (window._worldH || 900); }
 
   // ── Init — called once after game:init ─────────────────────
   function init() {
@@ -26,17 +28,28 @@ const Minimap = (function () {
 
     _ctx.clearRect(0, 0, MAP_W, MAP_H);
 
+    const sx = scaleX();
+    const sy = scaleY();
+
+    // Camera viewport box on the minimap — shows what's currently on screen
+    const cam = window._camera;
+    if (cam && window._viewW && window._viewH) {
+      _ctx.strokeStyle = 'rgba(74, 124, 142, 0.6)';
+      _ctx.lineWidth = 1;
+      _ctx.strokeRect(cam.x * sx, cam.y * sy, window._viewW * sx, window._viewH * sy);
+    }
+
     for (const id in renderState) {
       const p = renderState[id];
       if (p == null || p.x == null) continue;
 
       // Centre dot on sprite midpoint
-      const mx = (p.x + SPRITE_W  / 2) * SCALE;
-      const my = (p.y + SPRITE_H / 2) * SCALE;
+      const mx = (p.x + SPRITE_W  / 2) * sx;
+      const my = (p.y + SPRITE_H / 2) * sy;
 
       _ctx.fillStyle = id === localId
-        ? '#ffd700'                      // gold — local player (R8)
-        : 'rgba(240, 230, 200, 0.85)';  // cream — other players (R8)
+        ? '#4a7c8e'                       // teal — local player
+        : 'rgba(140, 160, 165, 0.85)';   // muted grey-blue — other players
 
       _ctx.beginPath();
       _ctx.arc(mx, my, DOT_RADIUS, 0, Math.PI * 2);
